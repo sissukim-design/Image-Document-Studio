@@ -18,7 +18,7 @@ import { ShieldCheck, Info, FileText, Image, Globe, Heart, RefreshCw, Sparkles }
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [theme, setTheme] = useState<ThemeMode>('light');
   const [language, setLanguage] = useState<string>(() => {
     try {
       const mainLang = (navigator.language || '').toLowerCase();
