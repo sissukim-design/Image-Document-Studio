@@ -1,0 +1,6 @@
+{
+  "name": "Image & Document Studio",
+  "description": "Secure, fast, and entirely client-side image compression, size tuning, format conversion, and document toolbox for PDF, Excel, PowerPoint, HWP, CSV, and text files.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
