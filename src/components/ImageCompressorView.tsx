@@ -7,8 +7,9 @@ import { useState, useEffect, useRef } from 'react';
 import { ImageProcessingOptions, ProcessableFile } from '../types';
 import { compressAndConvertImage } from '../utils/imageProcessor';
 import SquooshSlider from './SquooshSlider';
-import { Download, Sliders, RefreshCw, FileImage, Sparkles, Check, Settings, HelpCircle, ChevronDown, ChevronUp, Zap, Award, Info, ShieldCheck, Coins, ArrowRight, BookOpen, Clock, EyeOff, Lock } from 'lucide-react';
+import { Download, Sliders, RefreshCw, FileImage, Sparkles, Check, Settings, HelpCircle, ChevronDown, ChevronUp, Zap, Info, ShieldCheck, ArrowRight, Clock, Image } from 'lucide-react';
 import { TranslationDict } from '../translations';
+import { EXTRA_TRANSLATIONS } from '../translations_extra';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import JSZip from 'jszip';
@@ -116,6 +117,7 @@ interface ImageCompressorViewProps {
   t: TranslationDict;
   onLoadSampleFile?: (file: File) => void;
   mode?: 'convert' | 'compress';
+  language?: string;
 }
 
 export default function ImageCompressorView({
@@ -124,9 +126,14 @@ export default function ImageCompressorView({
   onClear,
   t,
   onLoadSampleFile,
-  mode = 'compress'
+  mode = 'compress',
+  language
 }: ImageCompressorViewProps) {
   const isKo = t.title ? t.title.includes('이미지') : false;
+  const lang = language || (isKo ? 'ko' : 'en');
+  const xt = EXTRA_TRANSLATIONS[lang] || EXTRA_TRANSLATIONS.en;
+
+  // Local state declarations
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [options, setOptions] = useState<ImageProcessingOptions>({
     quality: 0.78,
@@ -139,31 +146,15 @@ export default function ImageCompressorView({
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [activePreset, setActivePreset] = useState<'fast' | 'recommended' | 'high' | 'instagram' | 'thumbnail' | 'email' | 'facebook' | 'web' | 'custom'>('recommended');
-
-  const applyPreset = (preset: 'fast' | 'recommended' | 'high') => {
-    setActivePreset(preset);
-    if (preset === 'fast') {
-      setOptions((prev) => ({
-        ...prev,
-        quality: 0.45,
-        compressEnabled: true,
-      }));
-    } else if (preset === 'recommended') {
-      setOptions((prev) => ({
-        ...prev,
-        quality: 0.78,
-        compressEnabled: true,
-      }));
-    } else if (preset === 'high') {
-      setOptions((prev) => ({
-        ...prev,
-        quality: 0.95,
-        compressEnabled: true,
-      }));
-    }
-  };
-
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [activeFile, setActiveFile] = useState<ProcessableFile | null>(null);
+
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
+  // Track active file processing states with a ref Set to prevent double invocation
+  const activeProcessingSetRef = useRef<Set<string>>(new Set());
 
   // Auto-select the first file when loaded if nothing is selected
   useEffect(() => {
@@ -181,22 +172,40 @@ export default function ImageCompressorView({
     setActiveFile(file || null);
   }, [files, selectedFileId]);
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingTime, setProcessingTime] = useState<number | null>(null);
-
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
-
-  // Track active file processing states with a ref Set to prevent double invocation
-  const activeProcessingSetRef = useRef<Set<string>>(new Set());
+  // Apply basic quality preset configuration helper
+  const applyPreset = (preset: 'fast' | 'recommended' | 'high') => {
+    setActivePreset(preset);
+    if (preset === 'fast') {
+      setOptions((prev) => ({
+        ...prev,
+        quality: 0.45,
+        compressEnabled: true,
+        cropAspectRatio: 'none',
+        resizeMode: 'none'
+      }));
+    } else if (preset === 'recommended') {
+      setOptions((prev) => ({
+        ...prev,
+        quality: 0.78,
+        compressEnabled: true,
+        cropAspectRatio: 'none',
+        resizeMode: 'none'
+      }));
+    } else if (preset === 'high') {
+      setOptions((prev) => ({
+        ...prev,
+        quality: 0.95,
+        compressEnabled: true,
+        cropAspectRatio: 'none',
+        resizeMode: 'none'
+      }));
+    }
+  };
 
   // Reset completed/failed files to 'idle' when settings alter, so they all auto-re-process in the background
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      // Find files that are completed or failed
       const workFiles = files.filter(f => f.status === 'completed' || f.status === 'failed');
-      
-      // Keep files failed because of pre-validated size limits, do not trigger an infinite loop of reprocessing on those
       const MAX_FILE_SIZE = 50 * 1024 * 1024;
       const reProcessableFiles = workFiles.filter(f => f.size <= MAX_FILE_SIZE);
 
@@ -216,7 +225,7 @@ export default function ImageCompressorView({
           });
         });
       }
-    }, 500); // 500ms debounce to allow stable slider changes
+    }, 450); // Debounced to allow stable quick settings changes
 
     return () => clearTimeout(timeoutId);
   }, [options]);
@@ -257,15 +266,14 @@ export default function ImageCompressorView({
     }
   };
 
-  // Queue dispatcher effect: Monitors idle files and maintains a concurrency limit of 2 (with active file priority)
+  // Queue dispatcher effect: Monitors idle files and maintains a dynamic queue with up to 3 parallel processes
   useEffect(() => {
     const idleFiles = files.filter(f => f.status === 'idle');
     const processingFiles = files.filter(f => f.status === 'processing');
 
-    const CONCURRENCY_LIMIT = 2; // Keep client thread fluid, processing max 2 cards concurrently
+    const CONCURRENCY_LIMIT = 3; // Elevated parallel thread to optimize multi-image bulk processing speed
 
     if (processingFiles.length < CONCURRENCY_LIMIT && idleFiles.length > 0) {
-      // Priority 1: If the active selected workspace file is idle, process it first
       const priorityFile = idleFiles.find(f => f.id === selectedFileId && !activeProcessingSetRef.current.has(f.id));
       const nextFile = priorityFile || idleFiles.find(f => !activeProcessingSetRef.current.has(f.id));
 
@@ -274,7 +282,6 @@ export default function ImageCompressorView({
       }
     }
 
-    // Reactively update the global 'isProcessing' overlay state based on selected file status
     const isSelectedFileProcessing = files.some(f => f.id === selectedFileId && f.status === 'processing');
     if (isSelectedFileProcessing !== isProcessing) {
       setIsProcessing(isSelectedFileProcessing);
@@ -295,47 +302,26 @@ export default function ImageCompressorView({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const currentOriginalUrl = activeFile?.previewUrl || '';
-  const currentProcessedUrl = activeFile?.processedUrl || '';
-  const isWebPOrJpg = options.format === 'webp' || options.format === 'jpeg';
-  const showQualitySlider = isWebPOrJpg && options.compressEnabled !== false;
-
-  const triggerDownload = (file: ProcessableFile) => {
-    if (!file.processedUrl || !file.processedName) return;
-    const a = document.createElement('a');
-    a.href = file.processedUrl;
-    a.download = file.processedName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    // Celebrate!
-    confetti({
-      particleCount: 80,
-      spread: 60,
-      origin: { y: 0.85 }
-    });
-  };
-
   const downloadAllAsZip = async () => {
-    const completed = files.filter(f => f.status === 'completed' && f.processedUrl && f.processedName);
-    if (completed.length === 0) return;
+    const zip = new JSZip();
+    const completedFiles = files.filter((f) => f.status === 'completed' && f.processedUrl && f.processedName);
+    
+    if (completedFiles.length === 0) return;
 
     try {
-      const zip = new JSZip();
-      for (const f of completed) {
-        if (f.processedUrl && f.processedName) {
-          const response = await fetch(f.processedUrl);
-          const blob = await response.blob();
-          zip.file(f.processedName, blob);
+      for (const file of completedFiles) {
+        if (file.processedUrl && file.processedName) {
+          const res = await fetch(file.processedUrl);
+          const blob = await res.blob();
+          zip.file(file.processedName, blob);
         }
       }
 
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(content);
+      const contentBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(contentBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `opticonvert_images_${Date.now()}.zip`;
+      a.download = `optimized-stickers-images-${Date.now()}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -351,822 +337,710 @@ export default function ImageCompressorView({
     }
   };
 
+  const currentOriginalUrl = activeFile?.previewUrl || '';
+  const currentProcessedUrl = activeFile?.processedUrl || '';
+  const isWebPOrJpg = options.format === 'webp' || options.format === 'jpeg';
+  const showQualitySlider = isWebPOrJpg && options.compressEnabled !== false;
+
+  // Dictionary setup
+  const tRoadmapTitle = {
+    ko: "🚦 일괄 연산 로드맵", en: "🚦 Fast-Lane Roadmap", ja: "🚦 処理ロードマップ", zh: "🚦 处理指南", es: "🚦 Ruta de Proceso", fr: "🚦 Feuille de Route", de: "🚦 Verarbeitungs-Roadmap", vi: "🚦 Nhật ký xử lý", hi: "🚦 प्रसंस्करण नक्शा", ar: "🚦 خريطة المعالجة", pt: "🚦 Roteiro de Processamento", it: "🚦 Stato del Flusso", ru: "🚦 Дорожная карта"
+  }[lang] || "🚦 Roadmap";
+
+  const tProgressLabel = {
+    ko: "압축하는 중", en: "Compressing", ja: "圧縮中", zh: "压缩中", es: "Comprimiendo", fr: "Compression", de: "Kompression", vi: "Đang nén", hi: "संपीड़न जारी", ar: "جاري الضغط", pt: "Compactando", it: "Compressione", ru: "Сжатие"
+  }[lang] || "Compressing";
+
+  const tWaitingLabel = {
+    ko: "대기 중", en: "Waiting", ja: "待機中", zh: "等待中", es: "Esperando", fr: "En attente", de: "Warten", vi: "Đang chờ", hi: "प्रतीक्षा", ar: "في الانتظار", pt: "Aguardando", it: "In attesa", ru: "Ожидание"
+  }[lang] || "Waiting";
+
+  const tSnsPresetsLabel = {
+    ko: "📝 용도별 고속 규격 맞춤 (구글링 사이즈)",
+    en: "📝 Standard Output Target Presets (Fast Sizes)",
+    ja: "📝 用途別規格最適化（クイック設定）",
+    zh: "📝 平台快速智能剪裁预设",
+    es: "📝 Ajustes de Tamaño Óptimos para Redes",
+    fr: "📝 Formats Standards pour Réseaux Sociaux",
+    de: "📝 Plattformspezifische Bildformate",
+    vi: "📝 Thiết lập nhanh theo nhu cầu nền tảng",
+    hi: "📝 सोशल मीडिया प्रारूप प्रीसेट",
+    ar: "📝 إعدادات مخصصة لمنصات التواصل",
+    pt: "📝 Ajustes de Tamanho para Redes Sociais",
+    it: "📝 Impostazioni di Formato per Social",
+    ru: "📝 Готовые спецификации под соцсети"
+  }[lang] || "📝 Standard Output Target Presets";
+
+  const tSnsPresetsDesc = {
+    ko: "인스타, 블로그 썸네일, 이메일 최장축, 페이스북 웹 연동 맞춤 최적 해상도 및 포맷 규격을 검증하여 제공합니다.",
+    en: "Strictly matching Instagram square feed, blog thumbnail, layout email attachment, and FB optimization standards.",
+    ja: "Instagram、ブログ、メール、Facebookの推奨形式・サイズを検証したデータを提供します。",
+    zh: "已匹配 Instagram 贴图、博客封面、轻量邮件传输及 Facebook 网页标准布局。",
+    es: "Mapea resoluciones recomendadas para Instagram, miniaturas de blog, email y Facebook.",
+    fr: "Propose des dimensions calibrées pour Instagram, miniatures de blog, pièces jointes et Facebook.",
+    de: "Optimiert für Instagram, Blog-Bilder, E-Mail-Anhänge und Facebook-Layouts.",
+    vi: "Đã tối ưu hóa cho Instagram, ảnh thu nhỏ Blog, tệp đính kèm Email và Facebook.",
+    hi: "इंस्टाग्राम, ब्लॉग, ईमेल अटैचमेंट और फेसबुक के अनुकूलन आकारों को प्रदान करता है।",
+    ar: "يدمج المقاسات الموصى بها لـ إنستقرام، صورة مدونة، مرفق بريد، وفيسبوك.",
+    pt: "Oferece resoluções homologadas para Instagram, miniaturas de blog, email e Facebook.",
+    it: "Calibrato sulle dimensioni raccomandate per Instagram, blog, allegati email e Facebook.",
+    ru: "Оптимальные разрешения для Instagram, блогов, почты и Facebook."
+  }[lang] || "Standard social parameters.";
+
+  const tPresetsLabels = {
+    instagramko: '인스타그램 피드용', instagramen: 'Instagram square', instagramja: 'Instagramフィード', instagramzh: 'Instagram 动态贴图', instagrames: 'Instagram Feed', instagramfr: 'Fil Instagram', instagramde: 'Instagram-Feed', instagramvi: 'Đăng Instagram', instagramhi: 'इंस्टाग्राम फ़ीड', instagramar: 'منشور إنستقرام', instagrampt: 'Feed do Instagram', instagramit: 'Feed Instagram', instagramru: 'Лента Instagram',
+    thumbnailko: '네이버·티스토리 썸네일', thumbnailen: 'Blog Thumbnail', thumbnailja: 'ブログ・サムネイル', thumbnailzh: '博客封面缩略图', thumbnailes: 'Minia de Blog', thumbnailfr: 'Miniature de Blog', thumbnailde: 'Blog-Vorschaubild', thumbnailvi: 'Ảnh nhỏ Blog', thumbnailhi: 'ब्लॉग थंबनेल', thumbnailar: 'مصغرة بلوق', thumbnailpt: 'Miniatura de Blog', thumbnailit: 'Miniatura Blog', thumbnailru: 'Превью блога',
+    emailko: '이메일 첨부용 (속도극대화)', emailen: 'Email Attachment', emailja: 'メール添付用', emailzh: '邮件轻量附件', emailes: 'Email Liviano', emailfr: 'Pièce Jointe Mail', emailde: 'Leichter Mail-Anhang', emailvi: 'Đính kèm Email', emailhi: 'ईमेल अनुलग्नक', emailar: 'مرفق خفيف للبريد', emailpt: 'Anexo de Email', emailit: 'Allegato Email Leggero', emailru: 'Вложение в письмо',
+    facebookko: '페이스북 공유용 (고호환)', facebooken: 'Facebook optimization', facebookja: 'Facebook最適化', facebookzh: 'Facebook网页优化', facebookes: 'Optimizado para FB', facebookfr: 'Optimisé pour FB', facebookde: 'Facebook-Optimiert', facebookvi: 'Tối ưu Facebook', facebookhi: 'फेसबुक अनुकूलन', facebookar: 'تحسين فيسبوك', facebookpt: 'Optimizado para FB', facebookit: 'Ottimizzato Facebook', facebookru: 'Для Facebook',
+    webko: '웹사이트 게재용 (SEO 고속)', weben: 'Web SEO Optimized', webja: 'Web SEO 高速化', webzh: 'Web SEO 高性能', webes: 'Web SEO Optimizado', webfr: 'Optimisé Web SEO', webde: 'Web-SEO Optimiert', webvi: 'Tối ưu Web SEO', webhi: 'वेब एसईओ अनुकूलन', webar: 'تحسين محركات الويب', webpt: 'Web SEO Optimizado', webit: 'Ottimizzato Web SEO', webru: 'Для сайтов (SEO)'
+  };
+
+  const getSnsLabel = (key: 'instagram' | 'thumbnail' | 'email' | 'facebook' | 'web'): string => {
+    return (tPresetsLabels as any)[`${key}${lang}`] || (tPresetsLabels as any)[`${key}en`];
+  };
+
+  const tOneClickHeader = {
+    ko: "⚡ 스마트 일괄 원패스 압축 비율", en: "⚡ One-click Smart Settings", ja: "⚡ スマート一括推奨設定", zh: "⚡ 智能快捷一键调节", es: "⚡ Ajustes Inteligentes Rápidos", fr: "⚡ Réglages de Raccourci Uniques", de: "⚡ Intelligente Ein-Klick-Profile", vi: "⚡ Cấu hình nén nhanh một chạm", hi: "⚡ वन-क्लिक स्मार्ट संपीड़न", ar: "⚡ إعدادات ذكية بنقرة واحدة", pt: "⚡ Configurações Inteligentes", it: "⚡ Profili di Compressione Rapidi", ru: "⚡ Предустановки в один клик"
+  }[lang] || "⚡ Smart Settings";
+
+  const tFastPresetsHeader = {
+    ko: "🛠️ 고밀도 수동 정밀 조절", en: "🛠️ Manual Compression Configs", ja: "🛠️ マニュアル高度パラメータ", zh: "🛠️ 手动精细化控制面板", es: "🛠️ Controles Manuales Interactivos", fr: "🛠️ Options de Précision Manuelle", de: "🛠️ Manuelle Präzisionssteuerung", vi: "🛠️ Bảng điều khiển thủ công chi tiết", hi: "🛠️ मैनुअल कॉन्फ़िगरेशन विकल्प", ar: "🛠️ إعدادات يدوية فائقة التفصيل", pt: "🛠️ Controles Manuais Avançados", it: "🛠️ Controlli di Precisione Manuali", ru: "🛠️ Ручные параметры точности"
+  }[lang] || "🛠️ Manual Configs";
+
+  const tNoImgSelected = {
+    ko: "아직 선택된 이미지가 없습니다", en: "No Active Image Workspace", ja: "まだ画像が選択されていません", zh: "暂无选定图像单元", es: "No hay foto seleccionada", fr: "Aucun espace sélectionné", de: "Bisher kein Bild ausgewählt", vi: "Chưa chọn hoặc tải hình ảnh lên", hi: "कोई चयनित छवि नहीं है", ar: "لا توجد صور محددة للعمل عليها", pt: "Nenhuma imagem selecionada", it: "Nessuna immagine attiva", ru: "Изображение не выбрано"
+  }[lang] || "No Active Image Workspace";
+
+  const tPlaceholderExplain = {
+    ko: "파일을 업로드하면 실시간 무손실 압축율 및 원본 화질을 픽셀 단위로 대조하여 볼 수 있는 초정밀 슬라이더와 분석기가 활성화됩니다.",
+    en: "Once you upload layout photos, our real-time high-fidelity comparison slider and analytical dashboard will automatically spawn.",
+    ja: "ファイルをアップロードすると、画質の差をピクセル単位で比較できるスライダー画面が有効化されます。",
+    zh: "上传任意文件后，即刻唤醒高倍率智能滑块对比视窗及多维比率分析图，支持实时像素细节对比。",
+    es: "Al subir fotos, se activará el control de píxeles interactivo para contrastar la calidad cara a cara.",
+    fr: "Uploadez des fichiers pour lancer le comparateur interactif de rendu visuel pixel por pixel.",
+    de: "Nach dem Upload wird der interaktive Vorher-Nachher-Vergleich und die Spektralanalyse gestartet.",
+    vi: "Đã sẵn sàng tạo trình so sánh ảnh trượt so sánh tỷ lệ nén trực quan từng pixel thực tế.",
+    hi: "फ़ाइलें अपलोड करने पर सटीक कंट्रास्ट स्लाइडर सक्रिय हो जाता है ताकी गुणवत्ता का मिलان किया जा सके।",
+    ar: "بمجرد الرفع، سيعمل شريط المقارنة اللحظية والتحليلات لمشاهدة الفروقات لقطة بقطة وجزء بجزء.",
+    pt: "Uploade arquivos para liberar o controle deslizante de comparação interativa de alta fidelidade.",
+    it: "Una volta caricati i file, si illuminerà lo slider di confronto e l'interfaccia di diagnostica.",
+    ru: "После загрузки файлов активируется детальный интерактивный слайдер сравнения качества."
+  }[lang] || "Once you upload a file, the slider comparison tool will activate.";
+
+  const tNoImgSamplePrompt = {
+    ko: "테스트용 이미지가 없으신가요?", en: "Don't have an image ready?", ja: "テスト用の画像がありませんか？", zh: "手头没有现成测试图？", es: "¿No tiene imágenes listas?", fr: "Pas de visuel sous la main ?", de: "Keine passende Grafik zur Hand?", vi: "Bạn chưa có sẵn hình ảnh thử nghiệm?", hi: "क्या आपके पास जांच हेतु चित्र नहीं है?", ar: "ألا توجد لديك صور جاهزة للاختبار?", pt: "Sem imagens para teste?", it: "Non hai immagini di prova pronte?", ru: "Нет изображения для теста?"
+  }[lang] || "Don't have an image ready?";
+
+  const tSampleBtnText = {
+    ko: "⚡ 샘플 이미지로 즉시 체험해보기", en: "⚡ Load Cute Sample Graphic", ja: "⚡ サンプル画像で試してみる", zh: "⚡ 加载超萌渐变样图进行测试", es: "⚡ Cargar patrón de prueba lindo", fr: "⚡ Charger un exemple de test multicolore", de: "⚡ Bunte Beispieldatei laden", vi: "⚡ Nạp hình ảnh hoạt hình mẫu miễn phí", hi: "⚡ नमूना छवि लोड कर जांचें", ar: "⚡ تجربة محاكاة كرتونية سريعة", pt: "⚡ Baixar vetor de testes", it: "⚡ Carica l'immagine campione colorata", ru: "⚡ Загрузить тестовую графику"
+  }[lang] || "⚡ Load Cute Sample Graphic";
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full" id="image-compressor-root">
-      {/* Sidebar: Files panel */}
-      <div className="lg:col-span-4 lg:order-2 flex flex-col space-y-4" id="image-compressor-sidebar">
-        <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-50 dark:border-zinc-800 pb-3">
-            <h3 className="font-semibold text-gray-800 dark:text-zinc-200 flex items-center gap-2">
-              <FileImage className="w-5 h-5 text-blue-500" />
-              <span>Images ({files.length})</span>
+      
+      {/* LEFT COLUMN: Main Visual Workspace Canvas Stage (Takes 7 or 8 columns) */}
+      <div className="lg:col-span-7 xl:col-span-8 lg:order-1 flex flex-col space-y-4" id="image-compressor-workspace">
+        {files.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-8 shadow-3xs flex flex-col items-center justify-center text-center min-h-[500px]" id="empty-workspace-state">
+            <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-zinc-800 flex items-center justify-center text-blue-500 mb-5 shadow-2xs">
+              <FileImage className="w-8 h-8" />
+            </div>
+            
+            <h3 className="text-lg font-extrabold text-gray-900 dark:text-zinc-100 tracking-tight">
+              {tNoImgSelected}
             </h3>
-            <button
-              onClick={onClear}
-              className="text-xs font-semibold text-red-500 dark:text-red-400 hover:underline cursor-pointer"
-              id="clear-all-images-button"
-            >
-              {t.clearAll}
-            </button>
+            <p className="text-xs text-gray-400 dark:text-zinc-550 leading-relaxed font-semibold max-w-lg mt-2.5 mb-8">
+              {tPlaceholderExplain}
+            </p>
+
+            <div className="w-full max-w-sm rounded-2xl bg-gray-50/50 dark:bg-zinc-950 p-5 border border-gray-100 dark:border-zinc-850">
+              <span className="text-[10.5px] font-bold text-gray-400 block pb-3">{tNoImgSamplePrompt}</span>
+              {onLoadSampleFile && (
+                <button
+                  onClick={() => onLoadSampleFile(generateSampleImage())}
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-3xs hover:shadow-md cursor-pointer"
+                  id="load-sample-image-button"
+                >
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  <span>{tSampleBtnText}</span>
+                </button>
+              )}
+              <span className="text-[9px] text-gray-350 dark:text-zinc-650 block pt-2.5 font-medium">
+                {xt.imageNote}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs flex flex-col space-y-4 text-left" id="active-slider-stage">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-50 dark:border-zinc-800 pb-3">
+              <div className="flex items-center gap-2.5 leading-none">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse shrink-0" />
+                <h4 className="text-sm font-extrabold text-gray-900 dark:text-zinc-100 truncate pr-2">
+                  {lang === 'ko' ? "실시간 스플릿 스쿼시 슬라이더 대조기" : "Hifi-Split Compare Stage"}
+                </h4>
+              </div>
+
+              {activeFile?.processedSize && (
+                <div className="flex items-center gap-2 font-mono text-[11px] font-bold text-gray-400">
+                  <span className="text-gray-400 bg-gray-50 dark:bg-zinc-950 px-2 py-1 rounded">
+                    {lang === 'ko' ? "원본: " : "Orig: "}{formatSize(activeFile.size)}
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
+                  <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded">
+                    {lang === 'ko' ? "압축본: " : "Opt: "}{formatSize(activeFile.processedSize)}
+                  </span>
+                  <span className="text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-md">
+                    -{Math.round(((activeFile.size - activeFile.processedSize) / activeFile.size) * 100)}%
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Slider container with standard frame protection */}
+            <div className="relative w-full aspect-video min-h-[290px] sm:min-h-[440px] rounded-2xl bg-neutral-950 overflow-hidden border border-gray-100 dark:border-zinc-850 shadow-inner" id="compare-canvas-stage">
+              {isProcessing && (
+                <div className="absolute inset-0 bg-neutral-950/80 z-20 flex flex-col items-center justify-center space-y-3.5">
+                  <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+                  <span className="text-xs font-bold text-white tracking-widest uppercase font-mono">
+                    {tProgressLabel}...
+                  </span>
+                </div>
+              )}
+
+              {currentOriginalUrl && (
+                <SquooshSlider
+                  originalUrl={currentOriginalUrl}
+                  processedUrl={currentProcessedUrl || currentOriginalUrl}
+                  originalLabel={lang === 'ko' ? `원본 (${formatSize(activeFile?.size || 0)})` : `Original (${formatSize(activeFile?.size || 0)})`}
+                  processedLabel={
+                    activeFile?.status === 'completed'
+                      ? (lang === 'ko' ? `압축본 (${formatSize(activeFile?.processedSize || 0)})` : `Optimized (${formatSize(activeFile?.processedSize || 0)})`)
+                      : (lang === 'ko' ? '대기 중...' : 'Processing...')
+                  }
+                  t={t}
+                />
+              )}
+            </div>
+
+            {/* Downloader toolbar inline */}
+            {activeFile?.status === 'completed' && activeFile.processedUrl && (
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-50/50 dark:bg-zinc-950/60 p-4 rounded-2xl border border-gray-100 dark:border-zinc-850">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-950/40 text-[10.5px] px-2 py-0.5 rounded flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{xt.step3Completed.split('!')[0]}</span>
+                  </span>
+                  {processingTime && (
+                    <span className="text-[10px] font-mono text-gray-300 dark:text-zinc-650 flex items-center gap-1 leading-none font-semibold">
+                      <Clock className="w-3 h-3" />
+                      <span>{processingTime}ms</span>
+                    </span>
+                  )}
+                </div>
+
+                <a
+                  href={activeFile.processedUrl}
+                  download={activeFile.processedName}
+                  className="inline-flex items-center justify-center gap-1.5 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-3xs cursor-pointer"
+                  id="active-file-download-button"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{lang === 'ko' ? "개별 완성파일 즉시저장" : "Download Optimized File"}</span>
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* RIGHT COLUMN: Command Side-Desk holding Files list, Presets, and Parameters drawer (Takes 5 or 4 columns) */}
+      <div className="lg:col-span-5 xl:col-span-4 lg:order-2 flex flex-col space-y-4" id="image-compressor-sidebar">
+        
+        {/* Section 1: Files Manager List */}
+        <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs flex flex-col space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-50 dark:border-zinc-800 pb-3">
+            <h3 className="font-extrabold text-[13px] text-gray-800 dark:text-zinc-200 flex items-center gap-1.5 leading-none">
+              <FileImage className="w-4.5 h-4.5 text-blue-500" />
+              <span>{lang === 'ko' ? `이미지 목록 (${files.length})` : `Loaded Images (${files.length})`}</span>
+            </h3>
+            {files.length > 0 && (
+              <button
+                onClick={onClear}
+                className="text-[11px] font-extrabold text-red-500 dark:text-red-400 hover:underline cursor-pointer"
+                id="clear-all-images-button"
+              >
+                {t.clearAll}
+              </button>
+            )}
           </div>
 
-          <div className="space-y-2 overflow-y-auto max-h-[220px]" id="image-files-list">
-            <AnimatePresence>
-              {files.map((f) => {
-                const isSelected = f.id === selectedFileId;
-                const savings = f.processedSize ? Math.round(((f.size - f.processedSize) / f.size) * 100) : 0;
+          {files.length === 0 ? (
+            <div className="py-7 text-center text-[11px] text-gray-400 font-medium">
+              {lang === 'ko' ? "우측 혹은 상단 영역에 이미지를 넣어주세요" : "No active images to optimize"}
+            </div>
+          ) : (
+            <div className="space-y-2 overflow-y-auto max-h-[190px]" id="image-files-list">
+              <AnimatePresence>
+                {files.map((f) => {
+                  const isSelected = f.id === selectedFileId;
+                  const savings = f.processedSize ? Math.round(((f.size - f.processedSize) / f.size) * 100) : 0;
 
-                return (
-                  <motion.div
-                    key={f.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    onClick={() => setSelectedFileId(f.id)}
-                    className={`flex flex-col p-4 sm:p-3 min-h-[52px] sm:min-h-0 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? f.status === 'failed'
-                          ? 'border-red-500 bg-red-50/20 dark:bg-red-950/20'
-                          : 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20'
-                        : f.status === 'failed'
-                          ? 'border-red-200/50 dark:border-red-900/30 bg-red-50/10 dark:bg-red-950/5 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                          : 'border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        {f.previewUrl ? (
-                          <img
-                             src={f.previewUrl}
-                             alt=""
-                             className="w-10 h-10 object-cover rounded-lg border border-gray-100 dark:border-zinc-800"
-                             referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${
-                            f.status === 'failed'
-                              ? 'bg-red-100/50 dark:bg-red-950/30 border-red-200/30 text-red-500'
-                              : 'bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-750 text-gray-400'
-                          }`}>
-                            <FileImage className="w-5 h-5" />
+                  return (
+                    <motion.div
+                      key={f.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      onClick={() => setSelectedFileId(f.id)}
+                      className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                        isSelected
+                          ? f.status === 'failed'
+                            ? 'border-red-500 bg-red-50/20 dark:bg-red-950/20'
+                            : 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20'
+                          : f.status === 'failed'
+                            ? 'border-red-200/50 dark:border-red-900/30 bg-red-50/10 dark:bg-red-950/5 hover:bg-gray-50 dark:hover:bg-zinc-800'
+                            : 'border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 hover:bg-gray-50 dark:hover:bg-zinc-800/60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          {f.previewUrl ? (
+                            <img
+                              src={f.previewUrl}
+                              alt=""
+                              className="w-8 h-8 object-cover rounded-md border border-gray-100 dark:border-zinc-800 shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-750 text-gray-400 flex items-center justify-center shrink-0">
+                              <FileImage className="w-4.5 h-4.5" />
+                            </div>
+                          )}
+                          <div className="flex flex-col overflow-hidden leading-snug text-left">
+                            <span className="text-xs font-bold text-gray-800 dark:text-zinc-200 truncate max-w-[130px] sm:max-w-[170px]">
+                              {f.name}
+                            </span>
+                            <span className="text-[10px] font-mono text-gray-400 dark:text-zinc-500 font-semibold">
+                              {formatSize(f.size)}
+                            </span>
                           </div>
-                        )}
-                        <div className="flex flex-col overflow-hidden leading-tight text-left">
-                          <span className="text-[13px] font-semibold text-gray-800 dark:text-zinc-200 truncate pr-2">
-                            {f.name}
-                          </span>
-                          <span className="text-[11px] font-mono text-gray-400 dark:text-zinc-500">
-                            {formatSize(f.size)}
-                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {f.status === 'processing' && (
+                            <span className="text-[10.5px] font-mono font-bold text-blue-600 dark:text-blue-400">
+                              {f.progress}%
+                            </span>
+                          )}
+                          {f.status === 'completed' && savings > 0 && (
+                            <span className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold leading-none">
+                              -{savings}%
+                            </span>
+                          )}
+                          {f.status === 'failed' && (
+                            <span className="bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 font-mono text-[8px] px-1.5 py-0.5 rounded font-bold uppercase leading-none shrink-0">
+                              {lang === 'ko' ? "제외됨" : "EXCLUDED"}
+                            </span>
+                          )}
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        {f.status === 'processing' && (
-                          <span className="text-xs font-mono font-semibold text-blue-600 dark:text-blue-400">
-                            {f.progress}%
-                          </span>
-                        )}
-                        {f.status === 'completed' && savings > 0 && (
-                          <span className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-mono text-[10px] px-1.5 py-0.5 rounded-md font-semibold">
-                            -{savings}%
-                          </span>
-                        )}
-                        {f.status === 'failed' && (
-                          <span className="bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold leading-none shrink-0 uppercase">
-                            EXCLUDED
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Real-time linear progress bar for Image Compression */}
-                    {f.status === 'processing' && (
-                      <div className="mt-2.5 w-full bg-gray-200 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
-                        <motion.div
-                          className="bg-blue-500 h-full rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${f.progress}%` }}
-                          transition={{ duration: 0.15 }}
-                        />
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          )}
 
           {files.filter(f => f.status === 'completed').length > 0 && (
             <button
               onClick={downloadAllAsZip}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md mt-1 animate-pulse"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-3xs hover:shadow-md transition-all cursor-pointer"
               id="download-all-images-zip-button"
             >
               <Download className="w-4 h-4 text-white" />
-              <span>{isKo ? "변환 완료 이미지 일괄 다운로드 (.zip)" : "Download All as ZIP (.zip)"}</span>
+              <span>{t.downloadAll}</span>
             </button>
           )}
         </div>
 
-        {/* Bento Grid Configuration Panel */}
-        <div className="flex flex-col space-y-4" id="image-compressor-configurator-box">
-          {/* ===== 용도별 프리셋 버튼 바 ===== */}
-          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-4 shadow-xs">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-mono">⚡ 빠른 설정</span>
-              <span className="text-[10px] text-gray-400 font-mono">클릭 한 번으로 최적 설정 자동 적용</span>
-            </div>
-            <div className="grid grid-cols-5 gap-1.5">
-              {[
-                { id: 'instagram', label: 'Instagram', icon: '📸', desc: '1080px (1:1) · WebP', settings: { quality: 0.85, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1080, cropAspectRatio: '1:1' as const, compressEnabled: true } },
-                { id: 'thumbnail', label: isKo ? '블로그 썸네일' : 'Blog Thumbnail', icon: '🖼', desc: '800px (1:1) · WebP', settings: { quality: 0.85, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 800, cropAspectRatio: '1:1' as const, compressEnabled: true } },
-                { id: 'email', label: isKo ? '이메일 첨부용' : 'Email Attach', icon: '✉', desc: '800px (비율유지) · JPEG', settings: { quality: 0.65, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 800, cropAspectRatio: 'none' as const, compressEnabled: true } },
-                { id: 'facebook', label: isKo ? '페이스북' : 'Facebook', icon: '👍', desc: '1200px (비율유지) · JPEG', settings: { quality: 0.85, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 1200, cropAspectRatio: 'none' as const, compressEnabled: true } },
-                { id: 'web', label: isKo ? '웹 최적화' : 'Web Optimization', icon: '🌐', desc: '1920px (고화질) · WebP', settings: { quality: 0.82, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1920, cropAspectRatio: 'none' as const, compressEnabled: true } },
-              ].map((preset) => {
-                const isSelected = activePreset === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    onClick={() => {
-                      setOptions(prev => ({ ...prev, ...preset.settings }));
-                      setActivePreset(preset.id as any);
-                    }}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-150 cursor-pointer group ${
-                      isSelected
-                        ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 ring-2 ring-indigo-500/15 shadow-3xs'
-                        : 'border-gray-100 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-indigo-50 hover:border-indigo-200 dark:hover:bg-indigo-950/30'
-                    }`}
-                    title={preset.desc}
-                  >
-                    <span className="text-lg leading-none">{preset.icon}</span>
-                    <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 leading-none text-center">{preset.label}</span>
-                    <span className="text-[9px] text-gray-400 dark:text-zinc-500 group-hover:text-indigo-400 leading-none text-center">{preset.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
+        {/* Section 2: One-Click Quick Presets for SNS/SEO (Google-Optimized Dimensions) */}
+        <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs text-left">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-mono">
+              {tSnsPresetsLabel}
+            </span>
+          </div>
+          <p className="text-[10px] text-gray-400 dark:text-zinc-500 leading-normal mb-3.5 font-medium">
+            {tSnsPresetsDesc}
+          </p>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { id: 'instagram', label: getSnsLabel('instagram'), icon: '📸', desc: lang === 'ko' ? '1080px (1:1) · WebP (고압축)' : '1080px (1:1) · WebP', settings: { quality: 0.82, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1080, cropAspectRatio: '1:1' as const, compressEnabled: true } },
+              { id: 'thumbnail', label: getSnsLabel('thumbnail'), icon: '🖼', desc: lang === 'ko' ? '1000px (1:1) · WebP (정사각형)' : '1000px (1:1) · WebP', settings: { quality: 0.80, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1000, cropAspectRatio: '1:1' as const, compressEnabled: true } },
+              { id: 'email', label: getSnsLabel('email'), icon: '✉', desc: lang === 'ko' ? '800px · JPEG (최저용량)' : '800px · JPEG (Light)', settings: { quality: 0.65, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 800, cropAspectRatio: 'none' as const, compressEnabled: true } },
+              { id: 'facebook', label: getSnsLabel('facebook'), icon: '👍', desc: lang === 'ko' ? '1200px · JPEG (고화질표준)' : '1200px · JPEG (Stable)', settings: { quality: 0.80, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 1200, cropAspectRatio: 'none' as const, compressEnabled: true } },
+            ].map((preset) => {
+              const isSelected = activePreset === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => {
+                    setOptions(prev => ({ ...prev, ...preset.settings }));
+                    setActivePreset(preset.id as any);
+                  }}
+                  className={`flex flex-col items-start justify-between p-3.5 min-h-[90px] rounded-2xl border text-left cursor-pointer transition-all ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 ring-2 ring-indigo-500/15 shadow-3xs scale-[1.01]'
+                      : 'border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 hover:bg-indigo-50/30'
+                  }`}
+                  id={`preset-${preset.id}-button`}
+                >
+                  <div className="flex items-center gap-1.5 pb-1">
+                    <span className="text-base leading-none">{preset.icon}</span>
+                    <span className="text-[11px] font-extrabold text-gray-800 dark:text-zinc-200 leading-none truncate max-w-[125px]">
+                      {preset.label}
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] text-gray-400 dark:text-zinc-550 leading-tight font-mono font-semibold pt-1">
+                    {preset.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Section 3: One-Click Standard Multi-Ratio Compression */}
+        <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs text-left">
+          <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-gray-100 dark:border-zinc-800">
+            <h4 className="text-[12.5px] font-extrabold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5 leading-none">
+              <Zap className="w-4 h-4 text-amber-500" />
+              <span>{tOneClickHeader}</span>
+            </h4>
+            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+              {lang === 'ko' ? "클릭 즉시 반영" : "Instant"}
+            </span>
           </div>
 
-          
-          {/* BENTO BOX 1: Interactive Wizard Tracker (1-2-3 Step Flow) */}
-          <div className="bg-gradient-to-br from-blue-500/5 to-indigo-600/5 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-105/30 dark:border-blue-900/30 rounded-3xl p-5 shadow-xs text-left">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-blue-100/30 dark:border-blue-900/20">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 font-mono">
-                {isKo ? "⚡ 초고속 처리 로드맵" : "Processing Wizard Steps"}
-              </span>
-              <span className="text-[10px] font-semibold text-gray-400 font-mono">
-                {files.length > 0 ? (isKo ? "진행 중" : "In Progress") : (isKo ? "업로드 대기" : "Waiting")}
-              </span>
-            </div>
-
-            <div className="space-y-3.5">
-              {/* Step 1 */}
-              <div className="flex items-start gap-3">
-                <div className={`flex items-center justify-center w-5.5 h-5.5 rounded-full shrink-0 text-xs font-bold transition-all ${
-                  files.length > 0 
-                  ? 'bg-blue-600 text-white shadow-3xs' 
-                  : 'bg-gray-200 dark:bg-zinc-800 text-gray-500'
-                }`}>
-                  {files.length > 0 ? '✓' : '1'}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className={`text-xs font-bold leading-tight ${files.length > 0 ? 'text-gray-950 dark:text-zinc-100 font-extrabold' : 'text-gray-400 dark:text-zinc-500 font-semibold'}`}>
-                    {isKo ? "1단계: 원본 파일 로드" : "Step 1: Upload Images"}
-                  </span>
-                  <span className="text-[10px] text-gray-400 dark:text-zinc-505 leading-normal font-medium">
-                    {files.length > 0 
-                      ? (isKo ? `✓ 총 ${files.length}개의 이미지 인식 완료` : `✓ Connected ${files.length} active assets.`) 
-                      : (isKo ? "위 드롭존에 파일을 넣어보세요" : "Awaiting assets in dropzone above")}
-                  </span>
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex items-start gap-3 flex-1">
-                <div className={`flex items-center justify-center w-5.5 h-5.5 rounded-full shrink-0 text-xs font-bold transition-all ${
-                  files.length > 0
-                  ? 'bg-blue-600 text-white shadow-3xs' 
-                  : 'bg-gray-200 dark:bg-zinc-800 text-gray-450 dark:text-zinc-500'
-                }`}>
-                  {files.length > 0 && activePreset !== 'custom' ? '✓' : '2'}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className={`text-xs leading-tight ${files.length > 0 ? 'text-gray-800 dark:text-zinc-200 font-bold' : 'text-gray-400 dark:text-zinc-500 font-medium'}`}>
-                    {isKo ? "2단계: 출력 포맷 및 압축률 지정" : "Step 2: Choose Target Format & Presets"}
-                  </span>
-                  <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-normal font-medium">
-                    {isKo 
-                      ? `✓ 포맷: ${options.format.toUpperCase()} | 프리셋: ${activePreset === 'fast' ? '초절약' : activePreset === 'recommended' ? '추천' : activePreset === 'high' ? '고화질' : '수동 조절'}`
-                      : `✓ Format: ${options.format.toUpperCase()} | Setup: ${activePreset === 'custom' ? 'Custom' : activePreset}`}
-                  </span>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div className="flex items-start gap-3">
-                <div className={`flex items-center justify-center w-5.5 h-5.5 rounded-full shrink-0 text-xs font-bold transition-all ${
-                  activeFile?.status === 'completed' 
-                  ? 'bg-emerald-600 text-white shadow-3xs' 
-                  : 'bg-gray-200 dark:bg-zinc-800 text-gray-450 dark:text-zinc-500'
-                }`}>
-                  {activeFile?.status === 'completed' ? '✓' : '3'}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className={`text-xs leading-tight ${activeFile?.status === 'completed' ? 'text-gray-800 dark:text-zinc-200 font-extrabold' : 'text-gray-400 dark:text-zinc-500 font-medium'}`}>
-                    {isKo ? "3단계: 원패스 압축 및 변환 완료" : "Step 3: Instant Compress & Convert"}
-                  </span>
-                  <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-normal font-medium">
-                    {activeFile?.status === 'completed' 
-                      ? (isKo ? "⚡ 변환이 끝났습니다! 다운로드 버튼 클릭" : "⚡ Ready to download! Enjoy maximum bandwidth savings.")
-                      : (isKo ? "설정값을 바꿀 때마다 실시간 자동 수행" : "Live comparative split analysis active")}
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { id: 'fast', emoji: '⚡', name: xt.presetTiny, sub: xt.presetTinySub, color: 'hover:border-amber-400 hover:bg-amber-50/5' },
+              { id: 'recommended', emoji: '⭐', name: xt.presetStandard, sub: xt.presetStandardSub, color: 'hover:border-emerald-400 hover:bg-emerald-50/5' },
+              { id: 'high', emoji: '💎', name: xt.presetMax, sub: xt.presetMaxSub, color: 'hover:border-blue-400 hover:bg-blue-50/5' }
+            ].map((p) => {
+              const isActive = activePreset === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id as any)}
+                  className={`flex flex-col items-center justify-between p-2.5 min-h-[90px] rounded-xl border text-center transition-all cursor-pointer ${
+                    isActive
+                      ? 'border-indigo-500 bg-indigo-50/25 dark:bg-indigo-950/20 ring-2 ring-indigo-500/15 shadow-2xs scale-[1.01]'
+                      : `border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 ${p.color}`
+                  }`}
+                  id={`macro-preset-${p.id}-button`}
+                >
+                  <span className="text-base pb-1">{p.emoji}</span>
+                  <div className="flex flex-col w-full text-center leading-none mt-1">
+                    <span className="text-[10px] font-bold text-gray-800 dark:text-zinc-300">
+                      {p.name}
+                    </span>
+                    <span className="text-[8.5px] text-gray-400 dark:text-zinc-500 leading-relaxed pt-1.5 font-medium">
+                      {p.sub}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          {/* BENTO BOX 3: Export Format Grid (출력 형식 지정) */}
-          <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs text-left">
-            <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-gray-100 dark:border-zinc-800">
-              <h4 className="text-[13px] font-extrabold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5 leading-none">
-                <Sliders className="w-4 h-4 text-blue-500" />
-                <span>{isKo ? "웹 표준 포맷 선택" : "Save Target Format"}</span>
-              </h4>
-              <span className="text-[10px] items-center font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/45 px-2 py-0.5 rounded-md uppercase">
-                {options.format}
+        {/* Section 4: Advanced Fine-Tuning Keys Drawer Control */}
+        <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-3xs text-left">
+          <button
+            onClick={() => setIsAdvancedOpen(o => !o)}
+            className="w-full flex items-center justify-between p-4.5 font-extrabold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-50/50 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
+            id="toggle-advanced-configs-button"
+          >
+            <span className="flex items-center gap-1.5">
+              <Settings className={`w-4 h-4 text-indigo-550 ${isAdvancedOpen ? 'animate-spin' : ''}`} />
+              <span>{tFastPresetsHeader}</span>
+            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10.5px] font-bold text-gray-400 bg-gray-100 dark:bg-zinc-850 px-2 py-0.5 rounded">
+                {isAdvancedOpen ? (lang === 'ko' ? "접기" : "Collapse") : (lang === 'ko' ? "펴기" : "Details")}
               </span>
+              {isAdvancedOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
+          </button>
 
-            <p className="text-[11px] text-gray-400 dark:text-zinc-500 leading-normal mb-3 font-medium">
-              {isKo 
-                ? "구글 검색엔진 노출 속도를 빠르게 하려면 WebP 형식을 적극 권장합니다." 
-                : "WebP maximizes web speed and represents the modern web standard format."}
-            </p>
+          <AnimatePresence>
+            {isAdvancedOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.18 }}
+                className="p-5 border-t border-gray-100 dark:border-zinc-800 space-y-5 bg-gray-50/20"
+              >
+                {/* 1. Manual Quality Slider */}
+                {showQualitySlider && (
+                  <div className="space-y-3 text-left">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-gray-700 dark:text-zinc-200 font-extrabold">
+                        {lang === 'ko' ? "품질 수치 입력 (Quality %)" : "Manual Quality Scale"}
+                      </span>
+                      <span className={`font-mono text-[10.5px] font-extrabold px-1.5 py-0.5 rounded ${
+                        options.quality < 0.45 
+                          ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/20' 
+                          : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30'
+                      }`}>
+                        {Math.round(options.quality * 100)}%
+                      </span>
+                    </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {[
-                { 
-                  id: 'webp', 
-                  title: 'WebP', 
-                  desc: isKo ? '웹 최고효율 (검색우대)' : 'Modern web-optimized (Best)', 
-                  badge: 'Recommended'
-                },
-                { 
-                  id: 'jpeg', 
-                  title: 'JPEG', 
-                  desc: isKo ? '일반 호환 표준 포맷' : 'Standard photo file', 
-                  badge: 'Standard'
-                },
-                { 
-                  id: 'png', 
-                  title: 'PNG', 
-                  desc: isKo ? '투명 배경 보존' : 'Full transparent alpha', 
-                  badge: 'Lossless'
-                },
-                { 
-                  id: 'gif', 
-                  title: 'GIF', 
-                  desc: isKo ? '정적 압축 이미지 포맷' : 'Static compressed image', 
-                  badge: 'Standard'
-                }
-              ].map((fmt) => {
-                const isSelected = options.format === fmt.id;
-                return (
-                  <button
-                    key={fmt.id}
-                    type="button"
-                    onClick={() => {
-                      setOptions((prev) => ({ 
-                        ...prev, 
-                        format: fmt.id as any
-                      }));
-                      if (activePreset !== 'custom') {
+                    <input
+                      type="range"
+                      min="0.10"
+                      max="1.00"
+                      step="0.01"
+                      value={options.quality}
+                      onChange={(e) => {
+                        setOptions(prev => ({ ...prev, quality: parseFloat(e.target.value) }));
+                        setActivePreset('custom');
+                      }}
+                      className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-850 accent-indigo-600"
+                    />
+                    <div className="flex items-center justify-between text-[8px] font-bold font-mono text-gray-400">
+                      <span>{lang === 'ko' ? "최저 용량" : "Low quality"}</span>
+                      <span>{lang === 'ko' ? "기본 추천★" : "Recommended ★"}</span>
+                      <span>{lang === 'ko' ? "무손실 지향" : "High quality"}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Resize Mode selector */}
+                <div className="space-y-3.5 border-t border-gray-100/60 dark:border-zinc-800/60 pt-4 text-left">
+                  <span className="text-xs font-extrabold text-gray-800 dark:text-zinc-200 block">
+                    {xt.resizeTitle}
+                  </span>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'none', label: lang === 'ko' ? '비활성화' : 'Original width' },
+                      { id: 'width', label: lang === 'ko' ? '너비 기준 (Width px)' : 'Set fixed Width' },
+                      { id: 'percent', label: lang === 'ko' ? '비율 축소 (%)' : 'Percentage Scale' }
+                    ].map((modeItem) => {
+                      const isActive = options.resizeMode === modeItem.id;
+                      return (
+                        <button
+                          key={modeItem.id}
+                          onClick={() => {
+                            setOptions(prev => ({
+                              ...prev,
+                              resizeMode: modeItem.id as any,
+                              resizeValue: modeItem.id === 'width' ? 1080 : modeItem.id === 'percent' ? 80 : 100
+                            }));
+                            setActivePreset('custom');
+                          }}
+                          className={`py-2 px-3 rounded-lg border text-center text-[10.5px] font-semibold transition-all cursor-pointer ${
+                            isActive
+                              ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400'
+                              : 'border-gray-105 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-gray-500'
+                          }`}
+                        >
+                          {modeItem.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {options.resizeMode !== 'none' && (
+                    <div className="pt-2 bg-white dark:bg-zinc-950 p-3.5 rounded-xl border border-gray-100 dark:border-zinc-850 space-y-2">
+                      <span className="text-[10px] uppercase font-mono font-bold text-gray-400 block leading-none">
+                        {options.resizeMode === 'width' ? xt.resizePixelVal : xt.resizeScalePercent}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={options.resizeValue || ''}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setOptions(prev => ({ ...prev, resizeValue: val }));
+                            setActivePreset('custom');
+                          }}
+                          min="1"
+                          max="9999"
+                          className="w-full text-xs font-mono font-bold bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 text-gray-800 dark:text-zinc-100"
+                        />
+                        <span className="text-xs font-mono font-bold text-gray-400 shrink-0">
+                          {options.resizeMode === 'width' ? 'px' : '%'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Output Format selector */}
+                <div className="space-y-3.5 border-t border-gray-100/60 dark:border-zinc-800/60 pt-4 text-left">
+                  <span className="text-xs font-extrabold text-gray-800 dark:text-zinc-200 block">
+                    {lang === 'ko' ? "출력 파일 포맷 변환" : "Force output format"}
+                  </span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'webp', title: 'WebP', desc: lang === 'ko' ? '차세대 고대용량 웹 포맷' : 'Modern Web' },
+                      { id: 'png', title: 'PNG', desc: lang === 'ko' ? '무손실 알파 보존' : 'Lossless' },
+                      { id: 'jpeg', title: 'JPEG', desc: lang === 'ko' ? '초강력 호환 레거시' : 'High compatibility' }
+                    ].map((fmtItem) => {
+                      const isSelected = options.format === fmtItem.id;
+                      return (
+                        <button
+                          key={fmtItem.id}
+                          onClick={() => {
+                            setOptions(prev => ({ ...prev, format: fmtItem.id as any }));
+                            setActivePreset('custom');
+                          }}
+                          className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400'
+                              : 'border-gray-105 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-gray-505'
+                          }`}
+                        >
+                          <span className="text-[11px] font-extrabold">{fmtItem.title}</span>
+                          <span className="text-[8.5px] text-gray-400 leading-none pt-1">{fmtItem.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. Crop aspect ratio */}
+                <div className="space-y-3 pt-4 border-t border-gray-100/60 dark:border-zinc-800/60 text-left">
+                  <span className="text-xs font-extrabold text-gray-800 dark:text-zinc-200 block">
+                    {lang === 'ko' ? "스마트 종횡비 자르기 (Crop Aspect Ratio)" : "Crop boundaries"}
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'none', label: xt.cropNone || 'No Crop' },
+                      { id: '1:1', label: xt.cropInstaFeed || 'Square 1:1' },
+                      { id: '9:16', label: xt.cropInstaStory || 'Vertical 9:16' },
+                      { id: '16:9', label: xt.cropYtThumb || 'Widescreen 16:9' }
+                    ].map((cropItem) => {
+                      const isSelected = options.cropAspectRatio === cropItem.id;
+                      return (
+                        <button
+                          key={cropItem.id}
+                          onClick={() => {
+                            setOptions(prev => ({ ...prev, cropAspectRatio: cropItem.id as any }));
+                            setActivePreset('custom');
+                          }}
+                          className={`py-2 px-2 rounded-lg border text-center text-[10.5px] font-semibold transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400'
+                              : 'border-gray-105 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-gray-500'
+                          }`}
+                        >
+                          {cropItem.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 5. Legacy BMP notice */}
+                <div className="flex items-center justify-between border-t border-gray-100/50 dark:border-zinc-800/50 pt-3.5 mt-3 text-[10.5px]">
+                  <span className="text-gray-400 font-semibold flex items-center gap-1">
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>{xt.isBmpFormat || "Need bitmap raw formats?"}</span>
+                  </span>
+                  <select
+                    value={options.format === 'bmp' ? 'bmp' : ''}
+                    onChange={(e) => {
+                      if (e.target.value === 'bmp') {
+                        setOptions(prev => ({ ...prev, format: 'bmp' }));
                         setActivePreset('custom');
                       }
                     }}
-                    className={`relative flex flex-col justify-between p-3.5 h-[95px] rounded-2xl border text-left cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20 ring-2 ring-blue-500/10 shadow-3xs'
-                        : 'border-gray-205 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-gray-300 dark:hover:border-zinc-700'
-                    }`}
+                    className="bg-white dark:bg-zinc-950 border border-gray-150 rounded px-1.5 py-1 text-[10px] font-bold"
                   >
-                    {isSelected && (
-                      <span className="absolute top-2.5 right-2 text-blue-500 dark:text-blue-400 font-bold">
-                        <Check className="w-4 h-4 stroke-[3]" />
-                      </span>
-                    )}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 leading-none">
-                        <span className="text-[13px] font-extrabold text-gray-950 dark:text-zinc-100">
-                          {fmt.title}
-                        </span>
-                      </div>
-                      <p className="text-[9.5px] text-gray-400 dark:text-zinc-500 leading-normal pr-1.5 pt-0.5 font-medium">
-                        {fmt.desc}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Other formats dropdown */}
-            <div className="flex items-center justify-between border-t border-gray-100 dark:border-zinc-800 pt-3.5 mt-3">
-              <span className="text-[10px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 font-semibold">
-                <HelpCircle className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span>{isKo ? "BMP 포맷을 쓰고 싶으신가요?" : "Need legacy BMP format?"}</span>
-              </span>
-              <select
-                value={options.format === 'bmp' ? options.format : ''}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setOptions((prev) => ({ ...prev, format: e.target.value as any }));
-                    setActivePreset('custom');
-                  }
-                }}
-                className="text-[10.5px] font-extrabold text-gray-650 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 px-2.5 py-1.5 rounded-xl cursor-pointer hover:border-gray-350 transition-colors focus:outline-none"
-              >
-                <option value="">{isKo ? "선택..." : "Select..."}</option>
-                <option value="bmp">BMP (Raw uncompressed)</option>
-              </select>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs text-left">
-            <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-gray-100 dark:border-zinc-800">
-              <h4 className="text-[13px] font-extrabold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5 leading-none">
-                <Zap className="w-4 h-4 text-amber-500" />
-                <span>{isKo ? "원클릭 인공지능 프리셋" : "1-Click Smart Presets"}</span>
-              </h4>
-              <span className="text-[9.5px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">
-                {isKo ? "초보자 추천" : "Recommended"}
-              </span>
-            </div>
-
-            <p className="text-[11px] text-gray-400 dark:text-zinc-500 leading-normal mb-3.5 font-medium">
-              {isKo 
-                ? "설정에 머리 쓰지 마세요. 터치 한 번으로 최적의 화질 대비 용량 효율을 찾아냅니다."
-                : "Skip manual controls. Let the offline analyzer auto-configure settings in milliseconds."}
-            </p>
-
-            {/* Tap-friendly larger thumb-friendly preset buttons */}
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                {
-                  id: 'fast',
-                  emoji: '⚡',
-                  name: isKo ? '초경량 다이어트' : 'Tiny Size',
-                  sub: isKo ? '화질 45% (용량초절약)' : 'Prioritize Speed',
-                  color: 'hover:border-amber-400 hover:bg-amber-50/5 dark:hover:bg-amber-950/10'
-                },
-                {
-                  id: 'recommended',
-                  emoji: '⭐',
-                  name: isKo ? '추천 최적화' : 'Standard Auto',
-                  sub: isKo ? '화질 78% (베스트)' : 'Best Balance',
-                  color: 'hover:border-emerald-400 hover:bg-emerald-50/5 dark:hover:bg-emerald-950/10'
-                },
-                {
-                  id: 'high',
-                  emoji: '💎',
-                  name: isKo ? '무손실 최고화질' : 'Max Quality',
-                  sub: isKo ? '화질 95% (원본준수)' : 'Maximum Detail',
-                  color: 'hover:border-blue-400 hover:bg-blue-50/5 dark:hover:bg-blue-950/10'
-                }
-              ].map((p) => {
-                const isActive = activePreset === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => applyPreset(p.id as any)}
-                    className={`flex flex-col items-center justify-between p-3 min-h-[96px] rounded-2xl border text-center transition-all cursor-pointer ${
-                      isActive
-                        ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 ring-2 ring-indigo-500/15 shadow-2xs scale-[1.02]'
-                        : `border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 ${p.color}`
-                    }`}
-                  >
-                    <span className="text-xl pb-1">{p.emoji}</span>
-                    <div className="flex flex-col w-full text-center leading-none mt-1">
-                      <span className={`text-[11px] font-extrabold ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-800 dark:text-zinc-200'}`}>
-                        {p.name}
-                      </span>
-                      <span className="text-[8.5px] text-gray-400 dark:text-zinc-500 leading-relaxed pt-1.5 font-medium">
-                        {p.sub}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* PROGRESSIVE DISCLOSURE COLLAPSE (고급 정밀 옵션 상세 폴더) */}
-          <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-3xs text-left">
-              <button
-                type="button"
-                onClick={() => setIsAdvancedOpen((v) => !v)}
-                className="w-full flex items-center justify-between p-4.5 font-extrabold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-50/50 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <Settings className={`w-4 h-4 text-indigo-550 ${isAdvancedOpen ? 'animate-spin' : ''}`} />
-                  <span>{isKo ? "🛠️ 상세 정밀 조절 (고급 옵션)" : "⚙️ Advanced Fine-Tuning Keys"}</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10.5px] font-bold text-gray-400 bg-gray-100 dark:bg-zinc-850 px-2 py-0.5 rounded-md">
-                    {isAdvancedOpen ? (isKo ? "접기" : "Collapse") : (isKo ? "조절하기" : "Modify")}
-                  </span>
-                  {isAdvancedOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    <option value="">{xt.selectOption || "No"}</option>
+                    <option value="bmp">BMP (Raw)</option>
+                  </select>
                 </div>
-              </button>
 
-              <AnimatePresence>
-                {isAdvancedOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="p-5 border-t border-gray-100 dark:border-zinc-800 space-y-5 bg-gray-50/20"
-                  >
-                    
-                    {/* Detailed Manual Quality (Traffic Light Indicators) */}
-                    <div className="space-y-3 text-left">
-                       <div className="flex items-center justify-between text-[11px] font-bold">
-                        <span className="text-gray-700 dark:text-zinc-200 font-extrabold">{isKo ? "수동 화질 보정값 (Quality Slider)" : "Detailed Quality"}</span>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-mono text-[11px] font-extrabold px-1.5 py-0.5 rounded ${
-                            options.quality < 0.4 
-                              ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/20' 
-                              : (options.quality >= 0.7 && options.quality <= 0.85)
-                                ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 font-extrabold'
-                                : options.quality > 0.85
-                                  ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30 font-extrabold'
-                                  : 'text-amber-500 bg-amber-50/50 dark:bg-amber-950/20'
-                          }`}>
-                            {Math.round(options.quality * 100)}%
-                          </span>
-                        </div>
-                      </div>
-
-                      <input
-                        type="range"
-                        min="0.05"
-                        max="1.00"
-                        step="0.01"
-                        value={options.quality}
-                        onChange={(e) => {
-                          setOptions((prev) => ({ ...prev, quality: parseFloat(e.target.value) }));
-                          setActivePreset('custom');
-                        }}
-                        className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer transition-colors ${
-                          options.quality < 0.4 
-                            ? 'accent-amber-500 bg-amber-200 dark:bg-amber-950/40' 
-                            : (options.quality >= 0.7 && options.quality <= 0.85)
-                              ? 'accent-emerald-500 bg-emerald-250 dark:bg-emerald-950/40'
-                              : options.quality > 0.85
-                                ? 'accent-blue-500 bg-blue-200 dark:bg-blue-950/40'
-                                : 'accent-amber-400 bg-amber-100 dark:bg-amber-950/20'
-                        }`}
-                      />
-                      <div className="flex items-center justify-between text-[10px] font-bold leading-none pt-0.5 font-mono">
-                         <span className="text-amber-600 dark:text-amber-400">{isKo ? "초압축 (용량 최소화)" : "Tiny Width"}</span>
-                        <span className="text-emerald-600 dark:text-emerald-400">{isKo ? "골든 리체 추천★" : "Standard Auto ★"}</span>
-                        <span className="text-blue-600 dark:text-blue-400">{isKo ? "초고등 화질" : "Maximum"}</span>
-                      </div>
-                    </div>
-
-                    {/* SNS Crop Presets (Center Crop) */}
-                    <div className="space-y-3.5 border-t border-gray-100 dark:border-zinc-800 pt-4 text-left">
-                       <div className="flex items-center justify-between">
-                         <span className="text-xs font-extrabold text-gray-850 dark:text-zinc-200">
-                          {isKo ? "SNS 크롭 비율 지정 (중앙 기준)" : "SNS Crop Presets (Center Crop)"}
-                        </span>
-                        {options.cropAspectRatio && options.cropAspectRatio !== 'none' && (
-                          <span className="text-[9.5px] font-extrabold text-indigo-100 bg-indigo-500 px-2 py-0.5 rounded-md">
-                            {isKo ? "크롭 활성" : "Crop Active"}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-4 gap-2">
-                        {[
-                          { id: 'none', label: isKo ? '안함 (원본)' : 'None', desc: 'Original' },
-                          { id: '1:1', label: '1:1', desc: isKo ? '인스타 피드' : 'Insta Feed' },
-                          { id: '9:16', label: '9:16', desc: isKo ? '인스타 스토리' : 'Insta Story' },
-                          { id: '16:9', label: '16:9', desc: isKo ? '유튜브 썸네일' : 'YT Thumbnail' },
-                        ].map((preset) => {
-                          const isSelected = (options.cropAspectRatio || 'none') === preset.id;
-                          return (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              onClick={() => {
-                                setOptions((prev) => ({ ...prev, cropAspectRatio: preset.id as any }));
-                                setActivePreset('custom');
-                              }}
-                              className={`text-[11px] p-2 rounded-xl border text-center font-bold cursor-pointer transition-all flex flex-col items-center justify-center leading-tight ${
-                                isSelected
-                                  ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 shadow-3xs ring-2 ring-indigo-500/15'
-                                  : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-gray-750 dark:text-zinc-200 hover:border-gray-300'
-                              }`}
-                            >
-                              <span className="font-extrabold text-[12.5px]">{preset.label}</span>
-                              <span className="text-[8.5px] text-gray-400 dark:text-zinc-500 block font-normal mt-0.5 whitespace-nowrap">{preset.desc}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* STEP 3: Dimensional Scaling (리사이즈) */}
-                    <div className="space-y-3.5 border-t border-gray-100 dark:border-zinc-800 pt-4 text-left">
-                       <div className="flex items-center justify-between">
-                         <span className="text-xs font-extrabold text-gray-850 dark:text-zinc-200">
-                          {isKo ? "해상도 픽셀 크기 축소 (옵션)" : "Resize Options"}
-                        </span>
-                        {options.resizeMode !== 'none' && (
-                          <span className="text-[9.5px] font-extrabold text-indigo-100 bg-indigo-500 px-2 py-0.5 rounded-md">
-                            {isKo ? "가동중" : "On"}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: 'none', label: isKo ? '원본 비율 100%' : 'None (100%)' },
-                          { id: 'width', label: isKo ? '너비 지정 (Width)' : 'Fit Width' },
-                          { id: 'height', label: isKo ? '높이 지정 (Height)' : 'Fit Height' },
-                          { id: 'percentage', label: isKo ? '비율 조정 (%)' : 'Scale %' },
-                        ].map((mode) => (
-                          <button
-                            key={mode.id}
-                            type="button"
-                            onClick={() => {
-                              setOptions((prev) => ({ ...prev, resizeMode: mode.id as any }));
-                              setActivePreset('custom');
-                            }}
-                            className={`text-[11.5px] p-2 rounded-xl border text-center font-bold cursor-pointer transition-all leading-tight ${
-                              options.resizeMode === mode.id
-                                ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 shadow-3xs'
-                                : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-gray-700 dark:text-zinc-200 hover:border-gray-300'
-                            }`}
-                          >
-                            {mode.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {options.resizeMode !== 'none' && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          className="space-y-2 border border-dashed border-gray-200 dark:border-zinc-800 p-3.5 bg-white dark:bg-zinc-950 rounded-2xl"
-                        >
-                          <div className="flex items-center justify-between leading-none">
-                            <label className="text-[10px] font-semibold text-gray-400" htmlFor="resize-val-input">
-                              {options.resizeMode === 'percentage' 
-                                ? (isKo ? "비율 입력 (%)" : "Scale Percentage") 
-                                : (isKo ? "원하는 픽셀값 입력 (px)" : "Dimension Boundary")}
-                            </label>
-                            <span className="font-mono text-[10.5px] font-bold text-indigo-500">
-                              {options.resizeValue} {options.resizeMode === 'percentage' ? '%' : 'px'}
-                            </span>
-                          </div>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              id="resize-val-input"
-                              value={options.resizeValue}
-                              min="1"
-                              max={options.resizeMode === 'percentage' ? 500 : 10000}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value) || 0;
-                                setOptions((prev) => ({ ...prev, resizeValue: val }));
-                                setActivePreset('custom');
-                              }}
-                              className="w-full text-xs font-mono font-bold rounded-xl border border-gray-200 dark:border-zinc-800 pl-3 pr-8 py-2.5 bg-white dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10.5px] font-bold text-gray-400 select-none">
-                              {options.resizeMode === 'percentage' ? '%' : 'px'}
-                            </span>
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-          {/* BENTO BOX 4: 100% On-Device Security & Privacy Auditr (로컬 샌드박스 보안 감사 패널) */}
-          <div className="bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5 dark:from-emerald-950/10 dark:to-cyan-950/10 border border-emerald-200/30 dark:border-emerald-900/10 rounded-3xl p-5 shadow-3xs text-left relative overflow-hidden group">
-            {/* Glossy radial gradient spot */}
-            <div className="absolute top-0 right-0 -mr-10 -mt-10 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-cyan-500/10 rounded-full blur-xl animate-pulse" />
-            
-            <div className="flex items-center justify-between pb-2">
-              <span className="inline-flex items-center gap-1 text-[8.5px] font-extrabold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider leading-none">
-                {isKo ? "보안 검증 완료" : "Audit Verified"}
-              </span>
-              <span className="text-[10px] text-gray-400 font-mono tracking-wider font-extrabold flex items-center gap-1">
-                <Lock className="w-3 h-3 text-emerald-500" /> ON-DEVICE
-              </span>
-            </div>
-
-            <div className="space-y-1.5 relative">
-              <h5 className="text-[11.5px] font-extrabold text-gray-950 dark:text-zinc-100 leading-snug flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>{isKo ? "100% 클라이언트 사이드 보안인증 및 검열 검증" : "100% Client-Side Security Audited Sandbox"}</span>
-              </h5>
-              <p className="text-[9.5px] text-gray-500 dark:text-zinc-400 leading-relaxed font-semibold">
-                {isKo 
-                  ? "본 서비스는 브라우저 내부에서만 모든 연산을 완결합니다. [네트워크 실시간 검증 가이드] 지금 키보드의 F12 키를 눌러 개발자 도구를 여신 후, 'Network' 탭을 켜둔 상태로 파일들을 가공해 보세요. 외부 데이터 서버로 날아가는 통색 패킷이 완벽하게 0개이며, 단 1바이트의 유출 통로도 존재하지 않음을 실시간 청정 검열로 확인하실 수 있습니다."
-                  : "Every operation runs completely inside your isolated browser engine. [Local Network Inspection Guide] Press F12 to open Developer Tools, head to the 'Network' monitor, and execute any compression. You will visually verify that exactly zero external API uploads happen. Your data remains perfectly safe offline inside your sandboxed RAM."}
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Main Content Area: Slider & Live comparative telemetry */}
-      <div className="lg:col-span-8 lg:order-1 flex flex-col space-y-4" id="image-compressor-workspace">
-        {activeFile ? (
-          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col space-y-5">
-            {/* Header layout showing sizes and savings live */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-50 dark:border-zinc-800 pb-4">
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 truncate max-w-[280px]">
-                  {activeFile.name}
-                </h4>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400 dark:text-zinc-500 font-mono">
-                  <span>{formatSize(activeFile.size)}</span>
-                  <span>➔</span>
-                  {activeFile.processedSize ? (
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">
-                      {formatSize(activeFile.processedSize)}
-                    </span>
-                  ) : (
-                    <span className="animate-pulse">Loading size...</span>
-                  )}
-                  {processingTime && (
-                    <>
-                      <span>•</span>
-                      <span className="bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 px-1.5 py-0.5 rounded-md font-sans text-[10px]">
-                        {processingTime} ms
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-2">
-                {activeFile.status === 'completed' && activeFile.processedUrl && (
-                  <button
-                    onClick={() => triggerDownload(activeFile)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 hover:shadow-md cursor-pointer transition-all"
-                    id="download-selected-image-button"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>{t.download}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Split comparison viewport */}
-            <div className="relative">
-              {activeFile.status === 'failed' ? (
-                <div className="flex flex-col items-center justify-center p-12 border border-red-200/30 dark:border-red-900/30 rounded-2xl bg-red-50/25 dark:bg-red-950/20 text-center space-y-4">
-                  <div className="p-3 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-full">
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="space-y-1.5 max-w-md">
-                    <h4 className="font-extrabold text-gray-950 dark:text-white text-sm">
-                      {isKo ? "처리 차단 혹은 작업 오류" : "Processing Suspended / Error"}
-                    </h4>
-                    <p className="text-xs text-gray-600 dark:text-zinc-400 font-medium leading-relaxed">
-                      {activeFile.error || (isKo ? "알 수 없는 에러가 발생했습니다." : "An unknown error occurred.")}
-                    </p>
-                  </div>
-                </div>
-              ) : currentOriginalUrl && currentProcessedUrl ? (
-                <SquooshSlider
-                  originalUrl={currentOriginalUrl}
-                  processedUrl={currentProcessedUrl}
-                  originalLabel={`${t.original} (${formatSize(activeFile.size)})`}
-                  processedLabel={`${t.processed} (${activeFile.processedSize ? formatSize(activeFile.processedSize) : 'Loading...'})`}
-                  t={t}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center p-20 border border-gray-100 dark:border-zinc-800 rounded-2xl bg-gray-50/50 dark:bg-zinc-950/30">
-                  <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-4 font-bold animate-pulse">
-                    {t.processing}
-                  </p>
-                  <span className="text-[10px] text-gray-400 dark:text-zinc-500 pt-1">
-                    {isKo ? "대기열 큐 실행 순서 대기 중..." : "Waiting in parallel processing queue..."}
-                  </span>
-                </div>
-              )}
-
-              {/* Loader Overlay */}
-              {isProcessing && (
-                <div className="absolute top-3 right-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 flex items-center gap-2 shadow-xs pointer-events-none text-xs text-gray-600 dark:text-zinc-400">
-                  <RefreshCw className="w-3.5 h-3.5 text-blue-500 animate-spin" />
-                  <span>Processing...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Detailed Optimization Saving banner */}
-            {activeFile.processedSize && activeFile.processedSize < activeFile.size && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
-                <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <div className="text-xs text-emerald-800 dark:text-emerald-400">
-                  <span>Great job! You saved </span>
-                  <strong className="font-bold">
-                    {formatSize(activeFile.size - activeFile.processedSize)}
-                  </strong>
-                  <span> (</span>
-                  <strong className="font-bold">
-                    {Math.round(((activeFile.size - activeFile.processedSize) / activeFile.size) * 100)}%
-                  </strong>
-                  <span>) of space. This file compressed almost instantly on your machine.</span>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-zinc-900 border-2 border-dashed border-gray-150 dark:border-zinc-800 rounded-3xl p-10 shadow-xs flex flex-col items-center justify-center text-center space-y-6 relative overflow-hidden min-h-[440px]">
-            {/* Visual Guide Dotted Arrow pointing up */}
-            <div className="flex flex-col items-center space-y-2">
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                className="flex flex-col items-center text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-4 rounded-full"
-              >
-                <svg className="w-10 h-10 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeDasharray="3 3" 
-                    d="M12 20V4m0 0l-5 5m5-5l5 5" 
-                  />
-                </svg>
               </motion.div>
-              <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md uppercase tracking-wider font-mono">
-                {isKo ? "위쪽 드롭존에 파일을 넣어주세요" : "Upload Above"}
-              </span>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Section 5: Step Tracker roadmap */}
+        <div className="bg-gradient-to-br from-blue-500/5 to-indigo-600/5 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-100/25 dark:border-blue-900/10 rounded-3xl p-5 shadow-xs text-left">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-blue-100/25 dark:border-blue-900/10">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 font-mono">
+              {tRoadmapTitle}
+            </span>
+            <span className="text-[10px] font-semibold text-gray-400 font-mono">
+              {files.length > 0 ? tProgressLabel : tWaitingLabel}
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className={`flex items-center justify-center w-5.5 h-5.5 rounded-full shrink-0 text-[10.5px] font-bold transition-all ${
+                files.length > 0 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'
+              }`}>
+                {files.length > 0 ? '✓' : '1'}
+              </div>
+              <div className="flex flex-col text-left">
+                <span className={`text-xs font-bold leading-tight ${files.length > 0 ? 'text-gray-950 dark:text-zinc-100 font-extrabold' : 'text-gray-450'}`}>
+                  {xt.step1Title}
+                </span>
+                <span className="text-[10px] text-gray-400 dark:text-zinc-550 pt-0.5 leading-normal">
+                  {files.length > 0 ? xt.step1DescCompleted.replace('{count}', files.length.toString()) : xt.step1DescWaiting}
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-2 max-w-md">
-              <h4 className="font-extrabold text-gray-800 dark:text-zinc-100 text-base">
-                {isKo ? "아직 선택된 이미지가 없습니다" : "No Active Image Workspace"}
-              </h4>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed font-semibold">
-                {isKo 
-                  ? "위쪽 드롭존에 이미지(PNG, JPG, WebP)를 떨어뜨리거나 클릭하여 추가하면 비교 분석기 및 최적화 설정이 즉시 나타납니다!" 
-                  : "Drag and drop some files above or click to select them to activate comparison sliders, detailed tracers, and target formats instantly."}
-              </p>
-            </div>
-
-            {/* Programmatic Test Sample Creator */}
-            <div className="pt-4 border-t border-gray-100 dark:border-zinc-800/45 w-full max-w-xs flex flex-col items-center">
-              <span className="text-[10.5px] font-bold text-gray-400 dark:text-zinc-500 pb-2.5">
-                {isKo ? "테스트용 이미지가 없으신가요?" : "Don't have an image ready?"}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = generateSampleImage();
-                  if (onLoadSampleFile) {
-                    onLoadSampleFile(sample);
-                    // Confetti feedback for visual delight
-                    confetti({
-                      particleCount: 50,
-                      spread: 60,
-                      origin: { y: 0.8 }
-                    });
+            <div className="flex items-start gap-3">
+              <div className={`flex items-center justify-center w-5.5 h-5.5 rounded-full shrink-0 text-[10.5px] font-bold transition-all ${
+                files.length > 0 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400'
+              }`}>
+                2
+              </div>
+              <div className="flex flex-col text-left">
+                <span className={`text-xs font-bold leading-tight ${files.length > 0 ? 'text-gray-950 dark:text-zinc-100 font-extrabold' : 'text-gray-450'}`}>
+                  {xt.step2Title}
+                </span>
+                <span className="text-[10px] text-gray-400 dark:text-zinc-550 pt-0.5 leading-normal">
+                  {files.length > 0 
+                    ? xt.step2Desc.replace('{format}', options.format.toUpperCase()).replace('{preset}', activePreset.toUpperCase())
+                    : xt.step1DescWaiting
                   }
-                }}
-                className="w-full inline-flex items-center justify-center gap-2 px-4.5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-extrabold text-xs shadow-xs hover:shadow-md cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                <span>{isKo ? "⚡ 샘플 이미지로 테스트해보기" : "⚡ Load Cute Sample Graphic"}</span>
-              </button>
-              <p className="text-[9.5px] text-gray-400 dark:text-zinc-500 pt-2 font-medium leading-normal">
-                {isKo ? "※ 원본 대비 화질 및 벡터 분석이 가능한 컬러 캐릭터가 로드됩니다." : "※ Instantly populates a clean colorful gradient smiley test pattern."}
-              </p>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className={`flex items-center justify-center w-5.5 h-5.5 rounded-full shrink-0 text-[10.5px] font-bold transition-all ${
+                files.some(f => f.status === 'completed') ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'
+              }`}>
+                {files.some(f => f.status === 'completed') ? '✓' : '3'}
+              </div>
+              <div className="flex flex-col text-left">
+                <span className={`text-xs font-bold leading-tight ${files.some(f => f.status === 'completed') ? 'text-gray-950 dark:text-zinc-100 font-extrabold' : 'text-gray-450'}`}>
+                  {xt.step3Title}
+                </span>
+                <span className="text-[10px] text-gray-400 dark:text-zinc-555 pt-0.5 leading-normal">
+                  {files.some(f => f.status === 'completed') ? xt.step3Completed : xt.step3Incomplete}
+                </span>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+
       </div>
+
     </div>
   );
 }

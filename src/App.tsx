@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ProcessableFile, ThemeMode, ActiveTab } from './types';
 import { TRANSLATIONS } from './translations';
+import { EXTRA_TRANSLATIONS } from './translations_extra';
 import ThemeToggle from './components/ThemeToggle';
 import LanguageSelector from './components/LanguageSelector';
 import FileDropzone from './components/FileDropzone';
@@ -14,6 +15,22 @@ import AboutView from './components/AboutView';
 import LandingPage from './components/LandingPage';
 import { ShieldCheck, Info, FileText, Image, Globe, Heart, RefreshCw, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+const categoryTranslations: Record<string, { security: string; presets: string; resolutions: string }> = {
+  en: { security: "Security & Privacy", presets: "Smart Presets", resolutions: "Resolutions & Scaler" },
+  ko: { security: "보안 및 개인정보 보호", presets: "스마트 프리셋", resolutions: "해상도 및 압축" },
+  ja: { security: "セキュリティとプライバシー", presets: "スマートプリセット", resolutions: "解像度とスケーラー" },
+  zh: { security: "安全与隐私", presets: "智能预设", resolutions: "分辨率与缩放" },
+  es: { security: "Seguridad y Privacidad", presets: "Ajustes Inteligentes", resolutions: "Resoluciones y Escala" },
+  fr: { security: "Sécurité & Confidentialité", presets: "Préréglages Intelligents", resolutions: "Résolutions & Redimensionnement" },
+  de: { security: "Sicherheit & Datenschutz", presets: "Intelligente Presets", resolutions: "Auflösungen & Skalierung" },
+  vi: { security: "Bảo mật & Riêng tư", presets: "Cấu hình Thông minh", resolutions: "Độ phân giải & Tỉ lệ" },
+  hi: { security: "सुरक्षा और गोपनीयता", presets: "स्मार्ट प्रीसेट", resolutions: "रिज़ॉल्यूशन और स्केलर" },
+  ar: { security: "الأمان والخصوصية", presets: "الإعدادات الذكية", resolutions: "الدقة ومقياس الأبعاد" },
+  pt: { security: "Segurança & Privacidade", presets: "Ajustes Inteligentes", resolutions: "Resoluções & Escala" },
+  it: { security: "Sicurezza & Privacy", presets: "Profili Rapidi", resolutions: "Risoluzioni e Proporzioni" },
+  ru: { security: "Безопасность и конфиденциальность", presets: "Умные пресеты", resolutions: "Разрешение и масштабирование" }
+};
 
 export default function App() {
   const [theme, setTheme] = useState<ThemeMode>('light');
@@ -72,6 +89,7 @@ export default function App() {
   };
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
+  const xt = EXTRA_TRANSLATIONS[language] || EXTRA_TRANSLATIONS.en;
 
   const triggerA11yAnnouncement = (message: string) => {
     setA11yAnnouncement(message);
@@ -356,6 +374,7 @@ export default function App() {
                           onClear={handleClearAllFiles}
                           t={t}
                           onLoadSampleFile={(sampleFile: File) => handleFilesSelected([sampleFile])}
+                          language={language}
                         />
                       </motion.div>
                     )}
@@ -389,49 +408,47 @@ export default function App() {
               <section className="mt-16 pt-8 border-t border-gray-100 dark:border-zinc-900" id="app-seo-faq-section">
                 <div className="text-center space-y-2 mb-10">
                   <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-zinc-100 tracking-tight">
-                    {language === 'ko' ? "자주 묻는 질문 & 가이드" : "Frequently Asked Questions"}
+                    {xt.faqTitle}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-xl mx-auto font-medium">
-                    {language === 'ko' 
-                      ? "스티커즈 이미지 및 문서 스튜디오를 100% 활용하는 팁을 안내해 드립니다."
-                      : "Learn how to get the most out of our client-side conversion studio."}
+                    {xt.faqSubtitle}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white dark:bg-zinc-900 border border-gray-150/45 dark:border-zinc-850 p-6 rounded-2xl shadow-3xs space-y-2 text-left">
-                    <span className="text-[10px] uppercase font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded">Security & Privacy</span>
+                    <span className="text-[10px] uppercase font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded">
+                      {(categoryTranslations[language] || categoryTranslations.en).security}
+                    </span>
                     <h4 className="text-sm font-bold text-gray-800 dark:text-zinc-200">
-                      {language === 'ko' ? "Q. 제 파일이 외부 서버로 업로드되나요?" : "Q. Are my files uploaded to any server?"}
+                      {xt.faqQ1}
                     </h4>
                     <p className="text-xs text-gray-400 dark:text-zinc-400 leading-relaxed font-semibold">
-                      {language === 'ko'
-                        ? "아닙니다! 본 도구는 100% 클라이언트 브라우저 기반으로 동작합니다. WebAssembly 기술을 사용하여 기기 내부 연산만 수행하므로 파일 유출이나 대역폭 걱정 없이 안심하고 대용량 이미지를 변환하실 수 있습니다. [추가 정보] 본 스튜디오는 최신 WebAssembly(Wasm) 마이크로커널 규격을 가동하여 기존 서버 전송 방식의 전통적인 변환기 대비 최대 3배 이상 단축된 고속 변환 속도를 자랑하며, 기기 내부 브라우저 가상 샌드박스 장벽을 적극 응용함으로써 사용자의 소중한 데이터 자산과 대용량 문서를 완벽한 오프라인 보안 기류 하에 안전하게 격리 처리합니다."
-                        : "Absolutely not. All operations are processed on-device inside your sandboxed browser environment using WebAssembly. Your photos and sensitive records never touch any external API, making the system incredibly safe. [Additional Info] Since all operations proceed within pure memory-compile parameters, latency is capped by your local CPU potential rather than network bandwidth constraints. You can audit and verify this zero-ingress policy by opening your browser's Developer Tools (F12) Network panel and reviewing the activity log while processing archives."}
+                      {xt.faqA1}
                     </p>
                   </div>
 
                   <div className="bg-white dark:bg-zinc-900 border border-gray-150/45 dark:border-zinc-850 p-6 rounded-2xl shadow-3xs space-y-2 text-left">
-                    <span className="text-[10px] uppercase font-mono font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded">Smart Presets</span>
+                    <span className="text-[10px] uppercase font-mono font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded">
+                      {(categoryTranslations[language] || categoryTranslations.en).presets}
+                    </span>
                     <h4 className="text-sm font-bold text-gray-800 dark:text-zinc-200">
-                      {language === 'ko' ? "Q. '스마트 최적화 프리셋'이란 무엇인가요?" : "Q. What are Smart Presets?"}
+                      {xt.faqQ2}
                     </h4>
                     <p className="text-xs text-gray-400 dark:text-zinc-400 leading-relaxed font-semibold">
-                      {language === 'ko'
-                        ? "복잡한 슬라이더 수치 조정을 할 필요 없이, 초경량 다이어트(최저 용량), 추천 표준 최적화(최고 가성비), 무손실 최고화질(디자인 원본 보존) 중 터치 한 번으로 목적에 따른 연산 품질과 포맷을 자동 지정하는 도구입니다. [팁(Tip)] 각 버튼의 프리셋 아키텍처는 보편적인 크로마 서브샘플링(Chroma Subsampling, YUV 4:2:0) 인디케이터 비율과 메타데이터 소모 임계값을 지배적으로 선행 계산하여 조율되었습니다. 모바일 트래픽 낭비를 현격히 줄여 로딩 시간을 단축하려면 초경량 압축 프리셋을, 섬세한 텍스트 디자인 인쇄 원본을 영구 보존하려면 무손실 최고화질 사양을 선택하는 것이 정교한 방법입니다."
-                        : "Smart presets are pre-configured rendering boundaries that adjust format settings, pixel counts, and target ratios instantly. You can choose Tiny Size, Recommended Balance, or lossless Maximum Quality with a single click. [Tip] Our recommended balance uses strict visual modeling limits, reducing initial sizes by up to 80% while preserving color fidelity. Choose the Tiny Size preset for lightweight web asset deployment to optimize mobile loading timings and directly boost SEO PageSpeed score metrics."}
+                      {xt.faqA2}
                     </p>
                   </div>
 
                   <div className="bg-white dark:bg-zinc-900 border border-gray-150/45 dark:border-zinc-850 p-6 rounded-2xl shadow-3xs space-y-2 text-left md:col-span-2">
-                    <span className="text-[10px] uppercase font-mono font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded">Resolutions & Scaler</span>
+                    <span className="text-[10px] uppercase font-mono font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded">
+                      {(categoryTranslations[language] || categoryTranslations.en).resolutions}
+                    </span>
                     <h4 className="text-sm font-bold text-gray-800 dark:text-zinc-200">
-                      {language === 'ko' ? "Q. 이미지 해상도를 강제로 줄일 수도 있나요?" : "Q. Can I scale dimensional resolutions?"}
+                      {xt.faqQ3}
                     </h4>
                     <p className="text-xs text-gray-400 dark:text-zinc-400 leading-relaxed font-semibold">
-                      {language === 'ko'
-                        ? "네, 가능합니다! 고급 설정 슬라이드 패널을 펼쳐 '해상도 픽셀 축소' 섹션을 선택하시면, 고정 해상도 너비(Width), 높이(Height), 또는 백분율 비율(Scale %)을 자유롭게 입력하여 인쇄 또는 고화질 로딩 목적에 알맞은 파일로 커스터마이징할 수 있습니다. [추가 정보] 리사이징 처리 시 브라우저 내부 하드웨어 고속 가속엔진의 바이큐빅 볏선형 결합 보간 필터링(Anti-Aliasing Interpolation Kernel)이 즉시 발동하여 축소 시 우려되는 계단 현상이나 윤곽선 흐려짐을 최소한으로 자동 감소시켜 줍니다. 특히 종횡비 고정 잠금(Aspect Ratio Lock) 장치가 항상 유지되므로 출력 캔버스가 찌그러지거나 기형적으로 왜곡되는 것을 미연에 안전하게 밀착 설계 방지합니다."
-                        : "Yes, easily define custom layouts within the Progressive Advanced control drawer. Scale coordinates proportionally via fixed width boundary limits, height restrictions, or an dynamic scale-down percentage slider. [Additional Note] Scaling algorithms invoke modern anti-aliasing interpolation filters to ensure clear edges and tiny typography readability. Downscaling preserves original photo orientation structures automatically on-the-fly, confirming that your layout stays aligned and retains proper display ratios with robust pixel density."}
+                      {xt.faqA3}
                     </p>
                   </div>
                 </div>
@@ -447,15 +464,15 @@ export default function App() {
           {/* Linked subpages router triggers */}
           <div className="flex items-center justify-center gap-6 pb-2 pt-1 font-extrabold text-xs text-gray-500 dark:text-zinc-400 select-none">
             <a href="#/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-privacy">
-              {language === 'ko' ? "개인정보처리방침" : "Privacy Policy"}
+              {xt.footerPrivacy}
             </a>
             <span className="text-gray-300 dark:text-zinc-800">•</span>
             <a href="#/about" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-about">
-              {language === 'ko' ? "서비스 소개" : "About"}
+              {xt.footerAbout}
             </a>
             <span className="text-gray-300 dark:text-zinc-800">•</span>
             <a href="#/contact" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-contact">
-              {language === 'ko' ? "문의하기" : "Contact"}
+              {xt.footerContact}
             </a>
           </div>
 
