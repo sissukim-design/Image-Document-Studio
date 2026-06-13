@@ -424,7 +424,7 @@ export default function DocumentConverterView({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full" id="document-converter-root">
       
       {/* Sidebar Controls */}
-      <div className="lg:col-span-5 flex flex-col space-y-4" id="document-converter-sidebar">
+      <div className="lg:col-span-5 lg:order-2 flex flex-col space-y-4" id="document-converter-sidebar">
         
         {/* Tool Selector box */}
         <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col space-y-4">
@@ -539,7 +539,7 @@ export default function DocumentConverterView({
       </div>
 
       {/* Main Workspace Area */}
-      <div className="lg:col-span-7 flex flex-col space-y-4" id="document-converter-body">
+      <div className="lg:col-span-7 lg:order-1 flex flex-col space-y-4" id="document-converter-body">
         
         {/* Workspace Control Card */}
         <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col space-y-5">
