@@ -78,9 +78,8 @@ export default function FileDropzone({ onFilesSelected, title, subtitle }: FileD
           type="file"
           multiple
           onChange={handleFileInputChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          tabIndex={-1}
-          aria-hidden="true"
+          onClick={(e) => e.stopPropagation()}
+          style={{ display: 'none' }}
           id="dropzone-file-input"
         />
 

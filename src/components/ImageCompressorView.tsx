@@ -138,7 +138,7 @@ export default function ImageCompressorView({
   });
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
-  const [activePreset, setActivePreset] = useState<'fast' | 'recommended' | 'high' | 'custom'>('recommended');
+  const [activePreset, setActivePreset] = useState<'fast' | 'recommended' | 'high' | 'instagram' | 'thumbnail' | 'email' | 'facebook' | 'web' | 'custom'>('recommended');
 
   const applyPreset = (preset: 'fast' | 'recommended' | 'high') => {
     setActivePreset(preset);
@@ -479,26 +479,33 @@ export default function ImageCompressorView({
             </div>
             <div className="grid grid-cols-5 gap-1.5">
               {[
-                        { id: 'instagram', label: 'Instagram', icon: '📸', desc: '1080x1080px · WebP', settings: { quality: 0.85, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1080, resizeHeight: 1080, compressEnabled: true } },
-                        { id: 'thumbnail', label: '블로그 썸네일', icon: '🖼', desc: '1280x720px · WebP', settings: { quality: 0.85, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1280, resizeHeight: 720, compressEnabled: true } },
-                                        { id: 'email', label: '이메일 첨부용', icon: '✉', desc: '800x600px · JPEG', settings: { quality: 0.65, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 800, resizeHeight: 600, compressEnabled: true } },
-                        { id: 'facebook', label: '페이스북', icon: '👍', desc: '1200x630px · JPEG', settings: { quality: 0.85, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 1200, resizeHeight: 630, compressEnabled: true } },
-                        { id: 'web', label: '웹 최적화', icon: '🌐', desc: '1920x1080px · WebP', settings: { quality: 0.82, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1920, resizeHeight: 1080, compressEnabled: true } },
-              ].map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => {
-                    setOptions(prev => ({ ...prev, ...preset.settings }));
-                    setActivePreset('custom');
-                  }}
-                  className="flex flex-col items-center gap-1 p-2 rounded-xl border border-gray-100 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-indigo-50 hover:border-indigo-200 dark:hover:bg-indigo-950/30 dark:hover:border-indigo-700 transition-all duration-150 cursor-pointer group"
-                  title={preset.desc}
-                >
-                  <span className="text-lg leading-none">{preset.icon}</span>
-                  <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 leading-none text-center">{preset.label}</span>
-                  <span className="text-[9px] text-gray-400 dark:text-zinc-500 group-hover:text-indigo-400 leading-none text-center">{preset.desc}</span>
-                </button>
-              ))}
+                { id: 'instagram', label: 'Instagram', icon: '📸', desc: '1080px (1:1) · WebP', settings: { quality: 0.85, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1080, cropAspectRatio: '1:1' as const, compressEnabled: true } },
+                { id: 'thumbnail', label: isKo ? '블로그 썸네일' : 'Blog Thumbnail', icon: '🖼', desc: '800px (1:1) · WebP', settings: { quality: 0.85, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 800, cropAspectRatio: '1:1' as const, compressEnabled: true } },
+                { id: 'email', label: isKo ? '이메일 첨부용' : 'Email Attach', icon: '✉', desc: '800px (비율유지) · JPEG', settings: { quality: 0.65, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 800, cropAspectRatio: 'none' as const, compressEnabled: true } },
+                { id: 'facebook', label: isKo ? '페이스북' : 'Facebook', icon: '👍', desc: '1200px (비율유지) · JPEG', settings: { quality: 0.85, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 1200, cropAspectRatio: 'none' as const, compressEnabled: true } },
+                { id: 'web', label: isKo ? '웹 최적화' : 'Web Optimization', icon: '🌐', desc: '1920px (고화질) · WebP', settings: { quality: 0.82, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1920, cropAspectRatio: 'none' as const, compressEnabled: true } },
+              ].map((preset) => {
+                const isSelected = activePreset === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => {
+                      setOptions(prev => ({ ...prev, ...preset.settings }));
+                      setActivePreset(preset.id as any);
+                    }}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-150 cursor-pointer group ${
+                      isSelected
+                        ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 ring-2 ring-indigo-500/15 shadow-3xs'
+                        : 'border-gray-100 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-indigo-50 hover:border-indigo-200 dark:hover:bg-indigo-950/30'
+                    }`}
+                    title={preset.desc}
+                  >
+                    <span className="text-lg leading-none">{preset.icon}</span>
+                    <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 leading-none text-center">{preset.label}</span>
+                    <span className="text-[9px] text-gray-400 dark:text-zinc-500 group-hover:text-indigo-400 leading-none text-center">{preset.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
