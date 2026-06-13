@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ShieldCheck, ArrowLeft, Heart, Monitor, Zap, Cpu, Compass } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ShieldCheck, ArrowLeft, Heart, Monitor, Zap, Cpu, Compass, BookOpen, Lightbulb, ChevronDown, ChevronUp, Star, Film, FileText, Image as ImageIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface AboutViewProps {
   language: string;
@@ -24,6 +24,63 @@ export default function AboutView({ language, onBack, tabViewOnly = false }: Abo
       setBmsStatus('finished');
     }, 1500);
   };
+
+  const [activeCategory, setActiveCategory] = useState<'all' | 'image' | 'document' | 'tech'>('all');
+  const [expandedArticles, setExpandedArticles] = useState<{ [key: string]: boolean }>({});
+
+  const toggleArticle = (id: string) => {
+    setExpandedArticles((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const blogArticles = [
+    {
+      id: 'webp-avif',
+      category: 'image',
+      icon: <ImageIcon className="w-4 h-4 text-indigo-500" />,
+      titleKo: '💡 WebP vs AVIF: 최적의 압축 포맷 선택 가이드',
+      titleEn: '💡 WebP vs AVIF: Choosing the Perfect Compressed Format',
+      summaryKo: '압축률과 브라우저 호환성을 고려한 이미지 포맷 분석. 언제 어떤 포맷을 써야 효과적일까요?',
+      summaryEn: 'Analysis of compression ratio and web portability. Let’s find out which format is ideal.',
+      contentKo: 'WebP는 구글이 개발한 이미지 표준으로 거의 모든 현대 브라우저(97% 이상 호럼성)에서 지원되며, JPEG 대비 약 26%~34%의 용량 절감 성능을 발휘합니다. 압축 및 처리 인코딩 속도가 매우 빨라 본 스튜디오에서 여러 장을 고속 일괄 작업하기에 적합합니다.\n\n반면 AVIF는 차세대 강자로 뛰어난 명암 대비(HDR) 표현 및 압축률을 자랑하지만, WASM(WebAssembly) 브라우저 메모리 가속 인코딩 속도가 WebP에 비해 상대적으로 느릴 수 있습니다. 가장 안전하고 빠른 배포 결과를 원한다면 WebP를, 최고의 용량 압축 효율과 화질 디테일이 목표라면 AVIF 포맷 변환을 권장해 드립니다.',
+      contentEn: 'WebP is standard for general web builds ensuring 97%+ browser compatibility and saving up to 30% storage space over JPEG. It processes exceptionally fast in the local WASM memory. On the other hand, AVIF implements the high-profile chroma encoding of AV1, compressing extreme color spectrums perfectly. However, converting to AVIF in your local sandbox browser can take up to 3-5x longer than WebP. Use WebP for speed and broad compatibility, and choose AVIF for ultra-compact file sizing at bleeding-edge visual fidelity.',
+      readTimeKo: '3분 소요',
+      readTimeEn: '3 min read',
+    },
+    {
+      id: 'pdf-reduction',
+      category: 'document',
+      icon: <FileText className="w-4 h-4 text-emerald-500" />,
+      titleKo: '💡 150 DPI vs 300 DPI: 메일 전송용 PDF 용량 최소화',
+      titleEn: '💡 150 DPI vs 300 DPI: Minimizing PDF Sizing for Emails',
+      summaryKo: '사내 이메일 및 메신저 전송용 PDF 용량을 늘려먹는 메타 데이터와 해상도 최적화 비법.',
+      summaryEn: 'Tricks to eliminate unnecessary fonts, vector blocks, and meta headers to prevent file rejections.',
+      contentKo: '대부분의 디지털 화면 전송용 오피스 리포트 PDF 문서는 150 DPI(Dots Per Inch) 해상도로 충분히 선명하게 가독성이 유지됩니다. 인쇄 출력 전 주기 단계가 아니라면 화려한 300 DPI 소스를 고집할 필요는 전혀 없습니다.\n\n또한, 본 스튜디오의 통합 PDF 메인 병합 처리는 단순 바이트 병합이 아닌 내부 가상 링킹 주소 테이블(XREF Indirect References)을 지능적으로 재생성하므로, 용량 비대화 현상 없이 유효 텍스트 개체 정보만을 깔끔하게 직렬화해 담아냅니다.',
+      contentEn: 'Standard monitor screens only require 150 DPI resolutions for document content. Avoiding heavy 300 DPI layout assets prevents bloating. Additionally, merging or joining documents through traditional byte-slicing causes index table metadata wreckage. OptiConvert resolves this issue by applying real-time virtual linking mapping (XREF Table reconstructs), ensuring maximum reading clarity without wasting storage.',
+      readTimeKo: '2분 소요',
+      readTimeEn: '2 min read',
+    },
+
+    {
+      id: 'wasm-privacy-tech',
+      category: 'tech',
+      icon: <Cpu className="w-4 h-4 text-amber-500" />,
+      titleKo: '💡 원격 서버 없는 웹 스튜디오: WASM 샌드박스의 프라이버시 혁명',
+      titleEn: '💡 Client WASM Engines: Elevating Complete Local File Security',
+      summaryKo: '외부 클라우드로 소중한 파일을 단 1KB도 전송하지 않고 모든 연산을 100% 기기 로컬에서 진행.',
+      summaryEn: 'No web servers involved. All processing compiles on clean local client memory space.',
+      contentKo: '기존의 크기 축소나 변환 웹사이트들은 연산 처리를 위해 소중한 증명서, 비공개 디자인 파일, 보안 문서를 리모트 클라우드 백엔드로 업로드합니다. 이는 치명적인 사내 메신저 보안 규정 위배나 라이선스 누출 잠재 우려를 자아냅니다.\n\n본 Image & Document Studio는 WebAssembly 기반 런타임을 통해 이미지 변환, 가상 PDF 테이블 역인덱싱, FFmpeg 동영상 압축에 이르는 전 시스템 파이프라인의 연산부를 사용자 장치(기기 내부 CPU)에 가상 독립 구동시킵니다. 보안 폐쇄 사내망이나 불안정한 네트워크 오프라인 조건에서도 아무 지연이나 누수 걱정 없이 무결한 비즈니스 워크플로우를 영위할 수 있는 핵심 경쟁력입니다.',
+      contentEn: 'Standard online converter sites force users to upload layouts, secure blueprints, and personal identity certificates straight to their external backend cloud channels. To disrupt that hazard, this application implements complete client sandbox virtualization. By caching native binaries (WebP codec modules, WebAssembly wrappers, PDF-Lib structures, and FFmpeg assemblies), compilation is guaranteed locally. Enjoy corporate-level reliability even with severed internet lifelines.',
+      readTimeKo: '4분 소요',
+      readTimeEn: '4 min read',
+    },
+  ];
+
+  const filteredArticles = blogArticles.filter(
+    (art) => activeCategory === 'all' || art.category === activeCategory
+  );
 
   return (
     <motion.div
@@ -154,6 +211,118 @@ export default function AboutView({ language, onBack, tabViewOnly = false }: Abo
         </div>
       </div>
 
+      {/* 💡 최적화 꿀팁 및 최신 기술 뉴스 허브 (News & Blog Tips) */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-blue-50/10 dark:bg-zinc-950/40 border border-blue-100/30 dark:border-zinc-850/60 space-y-6 animate-fade-in" id="optimization-blog-hub">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-150/40 dark:border-zinc-850/60">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-wider">
+              {isKo ? "미디어 & 포맷 최적화 매거진" : "Media & Format Optimization Hub"}
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-500 shrink-0" />
+              <span>{isKo ? "💡 미디어 최적화 꿀팁 & 최신 뉴스" : "💡 Sizing & Transcoding Encyclopedia"}</span>
+            </h3>
+          </div>
+
+          {/* Category tabs */}
+          <div className="flex flex-wrap gap-1.5 self-start sm:self-center">
+            {([
+              { id: 'all', labelKo: '전체', labelEn: 'All' },
+              { id: 'image', labelKo: '이미지 팁', labelEn: 'Image' },
+              { id: 'document', labelKo: '문서 최적화', labelEn: 'Docs' },
+              { id: 'tech', labelKo: '최신 기술/뉴스', labelEn: 'Tech News' },
+            ] as const).map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeCategory === cat.id
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10 scale-[1.02]'
+                    : 'bg-gray-100 dark:bg-zinc-850 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-800'
+                }`}
+              >
+                {isKo ? cat.labelKo : cat.labelEn}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* List of articles */}
+        <div className="grid grid-cols-1 gap-4">
+          <AnimatePresence mode="popLayout">
+            {filteredArticles.map((art) => {
+              const isExpanded = !!expandedArticles[art.id];
+              return (
+                <motion.div
+                  key={art.id}
+                  layout="position"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                  className={`p-5 rounded-2xl border transition-all ${
+                    isExpanded
+                      ? 'border-blue-400 bg-blue-500/[0.02] dark:border-blue-900/40 ring-1 ring-blue-400/30'
+                      : 'border-gray-150 dark:border-zinc-850/80 bg-white dark:bg-zinc-900 hover:border-blue-200 dark:hover:border-zinc-800'
+                  }`}
+                >
+                  <div
+                    onClick={() => toggleArticle(art.id)}
+                    className="flex items-start justify-between gap-4 cursor-pointer select-none"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-gray-50 dark:bg-zinc-850 rounded-xl shrink-0 mt-0.5">
+                        {art.icon}
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-extrabold text-gray-900 dark:text-zinc-100 leading-snug">
+                          {isKo ? art.titleKo : art.titleEn}
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 line-clamp-2 md:line-clamp-1">
+                          {isKo ? art.summaryKo : art.summaryEn}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="hidden sm:inline-block text-[10px] bg-gray-100 dark:bg-zinc-850 font-semibold text-gray-400 dark:text-zinc-500 px-1.5 py-0.5 rounded-md font-mono">
+                        {isKo ? art.readTimeKo : art.readTimeEn}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-4 mt-4 border-t border-gray-100 dark:border-zinc-800/80 text-xs text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-line space-y-3">
+                          <p>{isKo ? art.contentKo : art.contentEn}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-blue-950/30 p-2.5 rounded-lg mt-2">
+                            <Lightbulb className="w-3.5 h-3.5 shrink-0" />
+                            <span>{isKo ? "팁 조언: 해당 탭 작업 공간에서 위 최적화 가이드 방식을 직접 체험해 보실 수 있습니다." : "Workspace Tip: Navigate back to the workspace to apply this advice directly on your files!"}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      </div>
+
       {/* Interactive Micro Benchmark tool, illustrating genuine client integrity */}
       <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-gray-150 dark:border-zinc-850/80 space-y-4">
         <div className="space-y-1">
@@ -210,6 +379,33 @@ export default function AboutView({ language, onBack, tabViewOnly = false }: Abo
         <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
         <span>for secure corporate workflows.</span>
       </div>
-    </motion.div>
+    
+      {/* 사용 케이스별 도구 링크 */}
+      <div className="mt-10 pt-10 border-t border-gray-200 dark:border-zinc-800">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+          {isKo ? '사용 케이스별 도구' : 'Tools by Use Case'}
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-6">
+          {isKo ? '자주 사용하는 작업에 바로 접근하세요.' : 'Jump directly to common tasks.'}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { href: '#/compress-image-for-instagram', title: isKo ? 'Instagram 이미지 압축' : 'Compress for Instagram', desc: isKo ? '화질 손상 없이 Instagram 최적화' : 'Optimize images for Instagram uploads', color: 'border-pink-200 dark:border-pink-900 hover:border-pink-400' },
+            { href: '#/convert-png-to-webp', title: isKo ? 'PNG → WebP 변환' : 'PNG to WebP', desc: isKo ? '웹 로딩 속도 30% 향상' : 'Boost web loading by ~30%', color: 'border-blue-200 dark:border-blue-900 hover:border-blue-400' },
+            { href: '#/compress-pdf-for-email', title: isKo ? '이메일용 PDF 압축' : 'Compress PDF for Email', desc: isKo ? '이메일 첨부 한도 이하로 압축' : 'Shrink PDFs for email attachments', color: 'border-orange-200 dark:border-orange-900 hover:border-orange-400' },
+            { href: '#/resize-image-free', title: isKo ? '이미지 리사이징 (무료)' : 'Resize Image Free', desc: isKo ? '픽셀/비율 정밀 조정' : 'Resize by pixel or percentage', color: 'border-violet-200 dark:border-violet-900 hover:border-violet-400' },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`block p-4 bg-white dark:bg-zinc-900 rounded-xl border ${item.color} transition-all duration-200 hover:shadow-md group`}
+            >
+              <p className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.title}</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{item.desc}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+</motion.div>
   );
 }

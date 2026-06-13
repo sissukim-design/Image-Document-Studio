@@ -107,13 +107,13 @@ export default function FileDropzone({ onFilesSelected, title, subtitle }: FileD
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2 pb-1 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
               <span className="px-2 py-1 rounded bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100/35 dark:border-rose-955/10">
                 {title.includes('드래그') || subtitle.includes('기기')
-                  ? "⚠️ 개별 용량 제한: 최대 50MB"
-                  : "⚠️ Size Limit: Max 50MB per file"}
+                  ? "50MB 제한"
+                  : "50MB limit"}
               </span>
               <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100/35 dark:border-indigo-955/10">
                 {title.includes('드래그') || subtitle.includes('기기')
-                  ? "📂 동시 권장 업로드: 최대 20개"
-                  : "📂 Recommended Batch: Max 20 files"}
+                  ? "최대 20파일"
+                  : "Up to 20 files"}
               </span>
             </div>
 
@@ -122,7 +122,7 @@ export default function FileDropzone({ onFilesSelected, title, subtitle }: FileD
                 <span>💡</span>
                 <span>
                   {title.includes('드래그') || subtitle.includes('기기')
-                    ? "따로 설정하지 않아도 가장 최적화된 결과물로 자동 변환됩니다. 먼저 파일을 올려보세요!"
+                    ? "자동 최적화 변환"
                     : "Auto-optimized by default: just drop files to convert with optimal smart compression!"}
                 </span>
               </span>

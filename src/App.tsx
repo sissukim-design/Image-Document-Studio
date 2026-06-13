@@ -1,7 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+
 
 import { useState, useEffect } from 'react';
 import { ProcessableFile, ThemeMode, ActiveTab } from './types';
@@ -14,6 +11,7 @@ import DocumentConverterView from './components/DocumentConverterView';
 import PrivacyPolicyView from './components/PrivacyPolicyView';
 import ContactView from './components/ContactView';
 import AboutView from './components/AboutView';
+import LandingPage from './components/LandingPage';
 import { ShieldCheck, Info, FileText, Image, Globe, Heart, RefreshCw, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -23,18 +21,32 @@ export default function App() {
     try {
       const mainLang = (navigator.language || '').toLowerCase();
       const allLangs = (navigator.languages || []).map(l => l.toLowerCase());
-      if (mainLang.includes('ko') || allLangs.some(l => l.includes('ko'))) {
-        return 'ko';
-      }
+      const check = (code) => mainLang.startsWith(code) || allLangs.some(l => l.startsWith(code));
+      if (check('ko')) return 'ko';
+      if (check('ru')) return 'ru';
+      return 'en';
     } catch (e) {
       // Ignored
     }
-    return 'en'; // Safe default for all international visitors and bots
+    return 'en';
   });
   const [activeTab, setActiveTab] = useState<ActiveTab>('image');
+    const [currentHash, setCurrentHash] = useState<string>(() => window.location.hash);
+
+  useEffect(() => {
+    const handleHashChange = () => setCurrentHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [files, setFiles] = useState<ProcessableFile[]>([]);
   const [a11yAnnouncement, setA11yAnnouncement] = useState<string>('');
-  const [currentHash, setCurrentHash] = useState<string>(window.location.hash);
+  const landingSlug = currentHash.startsWith('#/') ? currentHash.slice(2) : null;
+
+
+
+
+
 
   // Settle theme selectors
   useEffect(() => {
@@ -89,9 +101,9 @@ export default function App() {
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB Limit
 
     for (let i = 0; i < selectedFiles.length; i++) {
-      const currentFile = selectedFiles[i];
-      const isImage = currentFile.type.startsWith('image/') || 
-                      /\.(jpg|jpeg|png|webp|gif|bmp|tiff)$/i.test(currentFile.name);
+       const currentFile = selectedFiles[i];
+       const isImage = currentFile.type.startsWith('image/') || 
+                       /\.(jpg|jpeg|png|webp|gif|bmp|tiff)$/i.test(currentFile.name);
 
       const id = Math.random().toString(36).substring(2, 9) + '-' + i;
       const isSizeExceeded = currentFile.size > MAX_FILE_SIZE;
@@ -164,7 +176,19 @@ export default function App() {
   const imageCategorizedFiles = files.filter((f) => f.category === 'image');
   const documentCategorizedFiles = files.filter((f) => f.category === 'document');
 
-  return (
+  if (landingSlug) {
+    return (
+      <LandingPage
+        slug={landingSlug}
+        onStart={(tab) => {
+          setActiveTab(tab as ActiveTab);
+          window.location.hash = '';
+        }}
+      />
+    );
+  }
+
+    return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 transition-colors duration-200 selection:bg-blue-600 selection:text-white" id="main-application-container">
       
       {/* Invisible live announcements box for screen readers */}
@@ -197,9 +221,7 @@ export default function App() {
               <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-gray-800 dark:text-white">
                 {t.title}
               </h1>
-              <span className="text-[10px] sm:text-xs font-mono font-medium text-gray-400 dark:text-zinc-500">
-                CLIENT-EXCLUSIVE v1.0.0
-              </span>
+              
             </div>
           </div>
 
@@ -241,24 +263,7 @@ export default function App() {
               transition={{ duration: 0.2 }}
               className="space-y-8"
             >
-              {/* Banner with subheadline and Privacy verification */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-150/40 dark:border-zinc-900 shadow-xs" id="privacy-intro-banner">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-gray-500 dark:text-zinc-400 leading-relaxed md:max-w-xl">
-                    {t.subtitle}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 pt-1">
-                    <ShieldCheck className="w-4 h-4 shrink-0ID" />
-                    <span>{t.privacyNotice}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-zinc-950 border border-gray-150 dark:border-zinc-850 shrink-0 select-none">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[11px] font-mono font-semibold text-gray-500 dark:text-zinc-400">LOCALHOST-VM SECURED</span>
-                </div>
-              </div>
-
-              {/* Dynamic dropzone on top */}
+                            {/* Dynamic dropzone on top */}
               <div className="w-full" id="workspace-dropzone-section">
                 <FileDropzone
                   onFilesSelected={handleFilesSelected}

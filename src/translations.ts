@@ -14,6 +14,7 @@ export interface TranslationDict {
   tabImageCompress?: string;
   tabImageUpscale?: string;
   tabDocument: string;
+  tabVideo?: string;
   tabAbout: string;
 
   // Header settings
@@ -99,6 +100,7 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     tabImageCompress: 'Image Compression',
     tabImageUpscale: 'AI HD Upscaling',
     tabDocument: 'Document Tools',
+    tabVideo: 'Video Compressor',
     tabAbout: 'About & Tech',
     quality: 'Compression Quality',
     format: 'Output Format',
@@ -166,6 +168,7 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     tabImageCompress: '이미지 압축',
     tabImageUpscale: '업스케일',
     tabDocument: '문서 변환',
+    tabVideo: '영상 압축 및 변환',
     tabAbout: '기술 소개',
     quality: '압축 화질',
     format: '출력 포맷',
