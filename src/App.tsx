@@ -1,6 +1,7 @@
 
 
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ProcessableFile, ThemeMode, ActiveTab } from './types';
 import { TRANSLATIONS } from './translations';
 import { EXTRA_TRANSLATIONS } from './translations_extra';
@@ -18,18 +19,18 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const categoryTranslations: Record<string, { security: string; presets: string; resolutions: string }> = {
   en: { security: "Security & Privacy", presets: "Smart Presets", resolutions: "Resolutions & Scaler" },
-  ko: { security: "보안 및 개인정보 보호", presets: "스마트 프리셋", resolutions: "해상도 및 압축" },
-  ja: { security: "セキュリティとプライバシー", presets: "スマートプリセット", resolutions: "解像度とスケーラー" },
-  zh: { security: "安全与隐私", presets: "智能预设", resolutions: "分辨率与缩放" },
+  ko: { security: "ë³´ì ë° ê°ì¸ì ë³´ ë³´í¸", presets: "ì¤ë§í¸ íë¦¬ì", resolutions: "í´ìë ë° ìì¶" },
+  ja: { security: "ã»ã­ã¥ãªãã£ã¨ãã©ã¤ãã·ã¼", presets: "ã¹ãã¼ãããªã»ãã", resolutions: "è§£ååº¦ã¨ã¹ã±ã¼ã©ã¼" },
+  zh: { security: "å®å¨ä¸éç§", presets: "æºè½é¢è®¾", resolutions: "åè¾¨çä¸ç¼©æ¾" },
   es: { security: "Seguridad y Privacidad", presets: "Ajustes Inteligentes", resolutions: "Resoluciones y Escala" },
-  fr: { security: "Sécurité & Confidentialité", presets: "Préréglages Intelligents", resolutions: "Résolutions & Redimensionnement" },
-  de: { security: "Sicherheit & Datenschutz", presets: "Intelligente Presets", resolutions: "Auflösungen & Skalierung" },
-  vi: { security: "Bảo mật & Riêng tư", presets: "Cấu hình Thông minh", resolutions: "Độ phân giải & Tỉ lệ" },
-  hi: { security: "सुरक्षा और गोपनीयता", presets: "स्मार्ट प्रीसेट", resolutions: "रिज़ॉल्यूशन और स्केलर" },
-  ar: { security: "الأمان والخصوصية", presets: "الإعدادات الذكية", resolutions: "الدقة ومقياس الأبعاد" },
-  pt: { security: "Segurança & Privacidade", presets: "Ajustes Inteligentes", resolutions: "Resoluções & Escala" },
+  fr: { security: "SÃ©curitÃ© & ConfidentialitÃ©", presets: "PrÃ©rÃ©glages Intelligents", resolutions: "RÃ©solutions & Redimensionnement" },
+  de: { security: "Sicherheit & Datenschutz", presets: "Intelligente Presets", resolutions: "AuflÃ¶sungen & Skalierung" },
+  vi: { security: "Báº£o máº­t & RiÃªng tÆ°", presets: "Cáº¥u hÃ¬nh ThÃ´ng minh", resolutions: "Äá» phÃ¢n giáº£i & Tá» lá»" },
+  hi: { security: "à¤¸à¥à¤°à¤à¥à¤·à¤¾ à¤à¤° à¤à¥à¤ªà¤¨à¥à¤¯à¤¤à¤¾", presets: "à¤¸à¥à¤®à¤¾à¤°à¥à¤ à¤ªà¥à¤°à¥à¤¸à¥à¤", resolutions: "à¤°à¤¿à¤à¤¼à¥à¤²à¥à¤¯à¥à¤¶à¤¨ à¤à¤° à¤¸à¥à¤à¥à¤²à¤°" },
+  ar: { security: "Ø§ÙØ£ÙØ§Ù ÙØ§ÙØ®ØµÙØµÙØ©", presets: "Ø§ÙØ¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§ÙØ°ÙÙØ©", resolutions: "Ø§ÙØ¯ÙØ© ÙÙÙÙØ§Ø³ Ø§ÙØ£Ø¨Ø¹Ø§Ø¯" },
+  pt: { security: "SeguranÃ§a & Privacidade", presets: "Ajustes Inteligentes", resolutions: "ResoluÃ§Ãµes & Escala" },
   it: { security: "Sicurezza & Privacy", presets: "Profili Rapidi", resolutions: "Risoluzioni e Proporzioni" },
-  ru: { security: "Безопасность и конфиденциальность", presets: "Умные пресеты", resolutions: "Разрешение и масштабирование" }
+  ru: { security: "ÐÐµÐ·Ð¾Ð¿Ð°ÑÐ½Ð¾ÑÑÑ Ð¸ ÐºÐ¾Ð½ÑÐ¸Ð´ÐµÐ½ÑÐ¸Ð°Ð»ÑÐ½Ð¾ÑÑÑ", presets: "Ð£Ð¼Ð½ÑÐµ Ð¿ÑÐµÑÐµÑÑ", resolutions: "Ð Ð°Ð·ÑÐµÑÐµÐ½Ð¸Ðµ Ð¸ Ð¼Ð°ÑÑÑÐ°Ð±Ð¸ÑÐ¾Ð²Ð°Ð½Ð¸Ðµ" }
 };
 
 export default function App() {
@@ -48,17 +49,18 @@ export default function App() {
     return 'en';
   });
   const [activeTab, setActiveTab] = useState<ActiveTab>('image');
-    const [currentHash, setCurrentHash] = useState<string>(() => window.location.hash);
-
-  useEffect(() => {
-    const handleHashChange = () => setCurrentHash(window.location.hash);
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
+  
   const [files, setFiles] = useState<ProcessableFile[]>([]);
   const [a11yAnnouncement, setA11yAnnouncement] = useState<string>('');
-  const landingSlug = currentHash.startsWith('#/') ? currentHash.slice(2) : null;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathname = location.pathname;
+
+  // Sync active tab with URL path
+  useEffect(() => {
+    if (pathname === '/document') setActiveTab('document');
+    else if (pathname === '/' || pathname === '/image') setActiveTab('image');
+  }, [pathname]);
 
 
 
@@ -74,18 +76,13 @@ export default function App() {
     }
   }, [theme]);
 
-  // Synchronize dynamic routing via URL hashes
+  // Scroll to top on navigation
   useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentHash(window.location.hash);
-      window.scrollTo({ top: 0, behavior: 'instant' as any });
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, []);
 
   const handleGoHome = () => {
-    window.location.hash = '';
+    navigate('/');
   };
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
@@ -143,7 +140,7 @@ export default function App() {
         status: isSizeExceeded ? 'failed' : 'idle',
         error: isSizeExceeded 
           ? (language === 'ko' 
-              ? '파일당 최대 50MB 용량 제한을 초과했습니다. 브라우저 RAM 메모리 보호 및 탭 꺼짐(Out of Memory) 현상 방지를 위해 대용량 파일은 자동 실시간 처리에서 제외됩니다.' 
+              ? 'íì¼ë¹ ìµë 50MB ì©ë ì íì ì´ê³¼íìµëë¤. ë¸ë¼ì°ì  RAM ë©ëª¨ë¦¬ ë³´í¸ ë° í­ êº¼ì§(Out of Memory) íì ë°©ì§ë¥¼ ìí´ ëì©ë íì¼ì ìë ì¤ìê° ì²ë¦¬ìì ì ì¸ë©ëë¤.' 
               : 'File size exceeds the 50MB limit. This file is excluded to protect browser RAM and prevent Out of Memory tab crashes.')
           : undefined,
         previewUrl
@@ -158,7 +155,7 @@ export default function App() {
     if (sizeLimitErrorTriggered) {
       triggerA11yAnnouncement(
         language === 'ko'
-          ? "일부 파일이 50MB 크기 한도를 초과하여 실패 처리되었습니다."
+          ? "ì¼ë¶ íì¼ì´ 50MB í¬ê¸° íëë¥¼ ì´ê³¼íì¬ ì¤í¨ ì²ë¦¬ëììµëë¤."
           : "Some files exceeded the 50MB size limit and failed to import."
       );
     } else {
@@ -194,13 +191,14 @@ export default function App() {
   const imageCategorizedFiles = files.filter((f) => f.category === 'image');
   const documentCategorizedFiles = files.filter((f) => f.category === 'document');
 
-  if (landingSlug) {
+  if (pathname.startsWith('/landing/')) {
+    const slug = pathname.replace('/landing/', '');
     return (
       <LandingPage
-        slug={landingSlug}
+        slug={slug}
         onStart={(tab) => {
           setActiveTab(tab as ActiveTab);
-          window.location.hash = '';
+          navigate('/');
         }}
       />
     );
@@ -260,15 +258,15 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8" id="primary-main-workspace">
         <AnimatePresence mode="wait">
-          {currentHash === '#/privacy' ? (
+          {pathname === '/privacy' ? (
             <div key="privacy-page-wrapper">
               <PrivacyPolicyView language={language} onBack={handleGoHome} />
             </div>
-          ) : currentHash === '#/about' ? (
+          ) : pathname === '/about' ? (
             <div key="about-page-wrapper">
               <AboutView language={language} onBack={handleGoHome} />
             </div>
-          ) : currentHash === '#/contact' ? (
+          ) : pathname === '/contact' ? (
             <div key="contact-page-wrapper">
               <ContactView language={language} onBack={handleGoHome} />
             </div>
@@ -295,7 +293,7 @@ export default function App() {
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-900 pb-1">
                                <div className="flex flex-wrap items-center gap-1.5 bg-gray-100 dark:bg-zinc-900/60 p-1.5 rounded-2xl shadow-inner text-sm font-semibold max-w-full">
                     <button
-                      onClick={() => setActiveTab('image')}
+                      onClick={() => { setActiveTab('image'); navigate('/image'); }}
                       className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-3.5 sm:py-2 min-h-[44px] rounded-xl transition-all cursor-pointer text-xs sm:text-sm ${
                         activeTab === 'image'
                           ? 'bg-white dark:bg-zinc-950 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -314,7 +312,7 @@ export default function App() {
                     </button>
 
                     <button
-                      onClick={() => setActiveTab('document')}
+                      onClick={() => { setActiveTab('document'); navigate('/document'); }}
                       className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-3.5 sm:py-2 min-h-[44px] rounded-xl transition-all cursor-pointer text-xs sm:text-sm ${
                         activeTab === 'document'
                           ? 'bg-white dark:bg-zinc-950 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -463,26 +461,26 @@ export default function App() {
           
           {/* Linked subpages router triggers */}
           <div className="flex items-center justify-center gap-6 pb-2 pt-1 font-extrabold text-xs text-gray-500 dark:text-zinc-400 select-none">
-            <a href="#/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-privacy">
+            <a href="/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-privacy">
               {xt.footerPrivacy}
             </a>
-            <span className="text-gray-300 dark:text-zinc-800">•</span>
-            <a href="#/about" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-about">
+            <span className="text-gray-300 dark:text-zinc-800">â¢</span>
+            <a href="/about" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-about">
               {xt.footerAbout}
             </a>
-            <span className="text-gray-300 dark:text-zinc-800">•</span>
-            <a href="#/contact" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-contact">
+            <span className="text-gray-300 dark:text-zinc-800">â¢</span>
+            <a href="/contact" className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-all ring-offset-white dark:ring-offset-zinc-950 focus:outline-none focus:underline" id="footer-link-contact">
               {xt.footerContact}
             </a>
           </div>
 
-          <p>© 2026 Image & Document Studio. All file processing operates completely inside local sandboxed containers. No telemetry tracks your assets.</p>
+          <p>Â© 2026 Image & Document Studio. All file processing operates completely inside local sandboxed containers. No telemetry tracks your assets.</p>
           <div className="flex items-center justify-center gap-4 pt-1">
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-4.5 h-4.5 text-emerald-500" />
               <span>Full Local Sandbox Shield Enabled</span>
             </span>
-            <span>•</span>
+            <span>â¢</span>
             <span className="flex items-center gap-0.5">
               <Globe className="w-4.5 h-4.5 text-blue-500" />
               <span>All Google-supported Multilingual Locales</span>
