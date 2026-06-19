@@ -621,6 +621,97 @@ export default function ImageCompressorView({
       
       {/* LEFT COLUMN: Main Visual Workspace Canvas Stage (Takes 7 or 8 columns) */}
       <div className="lg:col-span-7 xl:col-span-8 lg:order-1 flex flex-col space-y-4" id="image-compressor-workspace">
+        
+        {/* TARGET FORMAT SELECTOR & QUALITY SLIDER CARD */}
+        <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-850/80 rounded-3xl p-4 shadow-3xs flex flex-col gap-3.5 text-left transition-colors" id="target-format-controller-and-quality-card">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Left: format selection */}
+            <div className="flex flex-col space-y-1.5 shrink-0">
+              <span className="text-[11px] font-extrabold text-gray-800 dark:text-zinc-200 uppercase tracking-wider font-mono">
+                {lang === 'ko' ? '변환할 확장자 선택' : 'Target Output Format'}
+              </span>
+              <div className="bg-gray-100/70 dark:bg-zinc-950 p-1 rounded-xl flex items-center gap-1 border border-gray-200/40 dark:border-zinc-800/70 w-fit">
+                {[
+                  { id: 'webp', label: 'WebP' },
+                  { id: 'jpeg', label: 'JPG' },
+                  { id: 'png', label: 'PNG' },
+                  { id: 'gif', label: 'GIF' }
+                ].map((fmt) => {
+                  const isSelected = options.format === fmt.id || (options.format === 'bmp' && fmt.id === 'png'); // fallback
+                  return (
+                    <button
+                      key={fmt.id}
+                      onClick={() => {
+                        setOptions((prev) => ({ ...prev, format: fmt.id as any }));
+                        setActivePreset('custom');
+                      }}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md shadow-blue-500/15 scale-[1.01] border-none'
+                          : 'text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-gray-200/50 dark:hover:bg-zinc-850/40'
+                      }`}
+                      id={`target-format-btn-${fmt.id}`}
+                    >
+                      {fmt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right: compact quality slider */}
+            <div className="flex flex-col space-y-1.5 flex-1 max-w-sm md:ml-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-gray-800 dark:text-zinc-200 uppercase tracking-wider font-mono">
+                  {lang === 'ko' ? '압축 품질' : 'Compression Quality'}
+                </span>
+                <span className={`font-mono text-[10.5px] font-extrabold px-1.5 py-0.5 rounded ${
+                  options.quality < 0.45 
+                    ? 'text-amber-600 bg-amber-50 dark:bg-amber-955/20' 
+                    : 'text-emerald-605 bg-emerald-50 dark:bg-emerald-955/30'
+                }`}>
+                  {Math.round(options.quality * 100)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0.10"
+                  max="1.00"
+                  step="0.01"
+                  value={options.quality}
+                  onChange={(e) => {
+                    setOptions(prev => ({ ...prev, quality: parseFloat(e.target.value) }));
+                    setActivePreset('custom');
+                  }}
+                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-200/60 dark:bg-zinc-800 accent-blue-600 dark:accent-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Live Feedback Tip */}
+          <div className="border-t border-gray-100 dark:border-zinc-800/80 pt-2.5 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1.5 bg-blue-50/50 dark:bg-blue-950/20 px-2.5 py-1 rounded-lg text-blue-600 dark:text-blue-400 font-semibold border border-blue-100/10 dark:border-blue-900/10">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
+              </span>
+              <span className="font-medium">
+                {lang === 'ko' 
+                  ? `선택한 [${options.format.toUpperCase() === 'JPEG' ? 'JPG' : options.format.toUpperCase()}]으로 변환 준비 완료` 
+                  : `Ready to convert to [${options.format.toUpperCase() === 'JPEG' ? 'JPG' : options.format.toUpperCase()}]`
+                }
+              </span>
+            </div>
+            {files.length > 0 && (
+              <span className="text-gray-400 dark:text-zinc-500 font-mono text-[9.5px]">
+                {lang === 'ko' ? '설정 변경 시 자동 실시간 변환' : 'Live updates apply instantly'}
+              </span>
+            )}
+          </div>
+        </div>
+
         {files.length === 0 ? (
           <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl p-8 shadow-3xs flex flex-col items-center justify-center text-center min-h-[500px]" id="empty-workspace-state">
             <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-zinc-800 flex items-center justify-center text-blue-500 mb-5 shadow-2xs">
