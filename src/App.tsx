@@ -338,40 +338,9 @@ export default function App() {
                 viewBox="0 0 100 100"
                 className="w-full h-full"
               >
-                <defs>
-                  <linearGradient
-                    id="header-g"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="#4f46e5" />
-                    <stop offset="100%" stopColor="#06b6d4" />
-                  </linearGradient>
-                </defs>
-                <rect width="100" height="100" rx="24" fill="url(#header-g)" />
-                <g opacity={0.3}>
-                  <rect
-                    x="25"
-                    y="35"
-                    width="50"
-                    height="45"
-                    rx="4"
-                    fill="#fff"
-                  />
-                  <rect
-                    x="30"
-                    y="25"
-                    width="40"
-                    height="55"
-                    rx="4"
-                    fill="#fff"
-                  />
-                </g>
-                <rect x="35" y="45" width="30" height="35" rx="6" fill="#fff" />
-                <circle cx="50" cy="58" r="4" fill="#06b6d4" />
-                <path d="M42 72l5-5 4 4 7-7 7 7H42z" fill="#4f46e5" />
+                <path d="M50 5 L90 20 L90 50 C90 72 70 90 50 97 C30 90 10 72 10 50 L10 20 Z" fill="#7C3AED"/>
+                <path d="M50 12 L83 25 L83 50 C83 68 66 84 50 90 C34 84 17 68 17 50 L17 25 Z" fill="#9F67FF" opacity="0.3"/>
+                <polygon points="58,18 38,52 52,52 42,82 68,44 53,44" fill="white" opacity="0.95"/>
               </svg>
             </div>
             <div className="flex flex-col">
