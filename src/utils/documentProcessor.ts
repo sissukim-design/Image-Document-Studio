@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, rgb, degrees } from 'pdf-lib';
 import * as XLSX from 'xlsx';
 
 /**
@@ -346,3 +346,101 @@ function convertImageToJpgArrayBuffer(file: File): Promise<ArrayBuffer> {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Places a signature image (PNG data URI) onto a PDF page.
+ */
+export async function signPDF(
+  pdfFile: File,
+  signatureDataUrl: string,
+  pageNumber: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  onProgress?: (msg: string) => void
+): Promise<Blob> {
+  if (onProgress) onProgress('Loading original PDF...');
+  const arrayBuffer = await pdfFile.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  
+  if (onProgress) onProgress('Importing signature asset...');
+  const signatureBytes = await fetch(signatureDataUrl).then(res => res.arrayBuffer());
+  const signatureImg = await pdfDoc.embedPng(signatureBytes);
+
+  const pageCount = pdfDoc.getPageCount();
+  const targetIndex = Math.min(Math.max(1, pageNumber), pageCount) - 1;
+  const page = pdfDoc.getPages()[targetIndex];
+
+  if (onProgress) onProgress(`Embedding graphic on page ${pageNumber}...`);
+  // Draw signature
+  page.drawImage(signatureImg, {
+    x,
+    y,
+    width,
+    height
+  });
+
+  if (onProgress) onProgress('Re-compiling signed PDF...');
+  const signedBytes = await pdfDoc.save();
+  return new Blob([signedBytes], { type: 'application/pdf' });
+}
+
+/**
+ * Returns total page count and individual page dimensions for previews.
+ */
+export async function getPDFPageInfo(file: File): Promise<{ pageCount: number; pages: { width: number; height: number }[] }> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    const pageCount = pdfDoc.getPageCount();
+    const pagesInfo = pdfDoc.getPages().map(p => {
+      const { width, height } = p.getSize();
+      return { width, height };
+    });
+    return { pageCount, pages: pagesInfo };
+  } catch (err) {
+    console.error("Failed to read PDF page info:", err);
+    return { pageCount: 1, pages: [{ width: 612, height: 792 }] };
+  }
+}
+
+/**
+ * Rotates all pages of a PDF document by a given degree angle.
+ * @param pdfFile The original PDF file
+ * @param angle The clockwise rotation angle in degrees (e.g., 90, 180, 275)
+ * @param onProgress Status update stream callback
+ */
+export async function rotatePDF(
+  pdfFile: File,
+  angle: number,
+  onProgress?: (msg: string) => void
+): Promise<Blob> {
+  if (onProgress) onProgress('Loading original PDF document...');
+  const arrayBuffer = await pdfFile.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+  const pageCount = pdfDoc.getPageCount();
+  if (onProgress) onProgress(`Rotating ${pageCount} pages by ${angle} degrees...`);
+  
+  for (let i = 0; i < pageCount; i++) {
+    const page = pdfDoc.getPages()[i];
+    const currentRotationObj = page.getRotation();
+    const currentAngle = currentRotationObj.angle || 0;
+    
+    // Calculate new angle securely
+    const newAngle = (currentAngle + angle) % 360;
+    page.setRotation(degrees(newAngle));
+    
+    if (onProgress && pageCount > 5) {
+      if (i % Math.ceil(pageCount / 4) === 0 || i === pageCount - 1) {
+        onProgress(`Processed page ${i + 1}/${pageCount}...`);
+      }
+    }
+  }
+
+  if (onProgress) onProgress('Compiling rotated PDF document streams...');
+  const savedBytes = await pdfDoc.save();
+  return new Blob([savedBytes], { type: 'application/pdf' });
+}
+

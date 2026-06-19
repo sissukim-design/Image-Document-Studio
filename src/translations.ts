@@ -86,6 +86,15 @@ export interface TranslationDict {
   a11yLanguageChanged: string;
   a11yFileProcessed: string;
   a11yError: string;
+
+  // New PDF Studio additions
+  actionPdfSign?: string;
+  docPdfSignDesc?: string;
+  shareTitle?: string;
+  shareEmail?: string;
+  shareDrive?: string;
+  shareSns?: string;
+  shareToastCopied?: string;
 }
 
 export const TRANSLATIONS: Record<string, TranslationDict> = {
@@ -99,7 +108,7 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     tabImageConvert: 'Image Conversion',
     tabImageCompress: 'Image Compression',
     tabImageUpscale: 'AI HD Upscaling',
-    tabDocument: 'Document Tools',
+    tabDocument: 'PDF Studio',
     tabVideo: 'Video Compressor',
     tabAbout: 'About & Tech',
     quality: 'Compression Quality',
@@ -133,6 +142,7 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     actionCsvToExcel: 'CSV ➔ Excel (.xlsx)',
     actionTxtToPdf: 'Text/Markdown ➔ PDF',
     actionMetaExtract: 'Document Metadata Extractor',
+    actionPdfSign: 'PDF E-Sign & Certify',
     docMergeDesc: 'Combine multiple PDF documents into a single consolidated PDF file in your exact preferred order.',
     docSplitDesc: 'Upload a PDF file and instantly separate it into individual standalone single-page PDFs.',
     docImagesToPdfDesc: 'Convert selected images (PNG, JPEG, WebP) into a clean, paginated PDF document.',
@@ -140,6 +150,12 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     docCsvToExcelDesc: 'Turn CSV spreadsheets into formatted open-XML Excel spreadsheets (.xlsx) with tables.',
     docTxtToPdfDesc: 'Convert plain text, CSV, or markdown files into elegant, paginated PDF documents for printing.',
     docMetaExtractDesc: 'Extract structured text, XML properties, and metadata securely from closed-format documents like PowerPoint (.pptx) or Hancom Hwp (.hwp).',
+    docPdfSignDesc: 'Securely type, draw, or upload your signature to place it onto any page of a PDF document offline.',
+    shareTitle: 'Share Finished PDF',
+    shareEmail: 'Share via Email',
+    shareDrive: 'Save to Google Drive',
+    shareSns: 'SNS Share & Send',
+    shareToastCopied: 'Shareable static workspace link copied!',
     download: 'Download',
     downloadAll: 'Download All Zip',
     clearAll: 'Clear All Filters',
@@ -167,7 +183,7 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     tabImageConvert: '이미지 변환',
     tabImageCompress: '이미지 압축',
     tabImageUpscale: '업스케일',
-    tabDocument: '문서 변환',
+    tabDocument: 'PDF 스튜디오',
     tabVideo: '영상 압축 및 변환',
     tabAbout: '기술 소개',
     quality: '압축 화질',
@@ -202,6 +218,7 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     actionCsvToExcel: 'CSV ➔ 엑셀 문서 (.xlsx)',
     actionTxtToPdf: '텍스트/문서 ➔ PDF 인쇄',
     actionMetaExtract: '기타 문서 텍스트/메타데이터 추출',
+    actionPdfSign: 'PDF 전자 서명 날인',
     docMergeDesc: '여러 개의 PDF 문서를 끌어다 놓은 뒤, 자유롭게 순서를 변경하여 하나의 단일 PDF 파일로 병합합니다.',
     docSplitDesc: '다중 페이지 PDF 파일을 업로드하면 즉시 각 페이지별 개별 PDF 파일로 분할해줍니다.',
     docImagesToPdfDesc: '선택한 여러 개 이미지 파일들을 깔끔한 하나의 PDF 보고서 형식 파일로 일괄 변환합니다.',
@@ -209,6 +226,12 @@ export const TRANSLATIONS: Record<string, TranslationDict> = {
     docCsvToExcelDesc: '쉼표로 구분된 CSV 파일을 깔끔하고 서식이 지정된 표준 엑셀 통합 문서(.xlsx)로 변환합니다.',
     docTxtToPdfDesc: '일반 텍스트(.txt), CSV 혹은 마크다운 형식의 내용을 깔끔한 인쇄용 PDF 보고서 파일로 즉시 변환합니다.',
     docMetaExtractDesc: '직접 디코드하기 어려운 PowerPoint(.pptx)나 한글(.hwp),기타 복합 포맷 문서에서 메타데이터와 안전하게 텍스트를 파싱하여 복구합니다.',
+    docPdfSignDesc: '기기에서 오프라인으로 텍스트 서명을 타이핑하거나 마우스/터치로 서명을 직접 그려서 PDF의 원하는 위치에 날인합니다.',
+    shareTitle: '완료된 PDF 공유',
+    shareEmail: '이메일로 공유',
+    shareDrive: '구글 드라이브 업로드',
+    shareSns: 'SNS 채널 공유',
+    shareToastCopied: '공유 가능한 로컬 작업 링크가 복사되었습니다!',
     download: '다운로드',
     downloadAll: '전체 ZIP 파일 다운로드',
     clearAll: '리스트 초기화',

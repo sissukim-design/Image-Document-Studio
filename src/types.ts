@@ -33,7 +33,7 @@ export interface ImageProcessingOptions {
 }
 
 export interface DocumentProcessingOptions {
-  action: 'pdf-merge' | 'pdf-split' | 'images-to-pdf' | 'excel-to-csv' | 'csv-to-excel' | 'txt-to-pdf' | 'meta-extract';
+  action: 'pdf-merge' | 'pdf-split' | 'images-to-pdf' | 'excel-to-csv' | 'csv-to-excel' | 'txt-to-pdf' | 'meta-extract' | 'pdf-sign';
   pdfMergeOrder?: string[]; // array of file IDs
   excelSheetName?: string;
 }

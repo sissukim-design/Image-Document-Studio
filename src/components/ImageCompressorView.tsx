@@ -432,8 +432,189 @@ export default function ImageCompressorView({
   }[lang] || "Don't have an image ready?";
 
   const tSampleBtnText = {
-    ko: "⚡ 샘플 이미지로 즉시 체험해보기", en: "⚡ Load Cute Sample Graphic", ja: "⚡ サンプル画像で試してみる", zh: "⚡ 加载超萌渐变样图进行测试", es: "⚡ Cargar patrón de prueba lindo", fr: "⚡ Charger un exemple de test multicolore", de: "⚡ Bunte Beispieldatei laden", vi: "⚡ Nạp hình ảnh hoạt hình mẫu miễn phí", hi: "⚡ नमूना छवि लोड कर जांचें", ar: "⚡ تجربة محاكاة كرتونية سريعة", pt: "⚡ Baixar vetor de testes", it: "⚡ Carica l'immagine campione colorata", ru: "⚡ Загрузить тестовую графику"
+    ko: "⚡ 샘플 이미지로 즉시 체험해보기", en: "⚡ Load Cute Sample Graphic", ja: "⚡ サンプル画像で試してみる", zh: "⚡ 加载超萌渐变样图进行测试", es: "⚡ Cargar patrón de prueba lindo", fr: "⚡ Charger un exemple de test multicolore", de: "⚡ Bunte Beispieldatei laden", vi: "⚡ Nạp hình ảnh hoạt hình mẫu miễn phí", hi: "⚡ नमू나 이미지 로드해보기", ar: "⚡ تجربة محاكاة كرتونية سريعة", pt: "⚡ Baixar vetor de testes", it: "⚡ Carica l'immagine campione colorata", ru: "⚡ Загрузить тестовую графику"
   }[lang] || "⚡ Load Cute Sample Graphic";
+
+  const imgLocalDict: Record<string, Record<string, string>> = {
+    splitCompareStage: {
+      ko: "실시간 스플릿 스쿼시 슬라이더 대조기",
+      en: "Hifi-Split Compare Stage",
+      ja: "リアルタイム比較スライダー",
+      zh: "实时无损画质滑块对比",
+      es: "Panel de comparación en tiempo real",
+      fr: "Comparateur en temps réel en direct",
+      de: "Echtzeit-Vergleichs-Schieberegler",
+      vi: "Trình so sánh ảnh trượt trực quan",
+      hi: "वास्तविक समय तुलना स्लाइडر",
+      ar: "لوحة المقارنة الحية اللحظية",
+      pt: "Visualizador de comparação em tempo real",
+      it: "Slider di confronto in tempo real",
+      ru: "Интерактивное сравнение качества"
+    },
+    origPrefix: {
+      ko: "원본: ",
+      en: "Orig: ",
+      ja: "元: ",
+      zh: "原始: ",
+      es: "Orig: ",
+      fr: "Orig : ",
+      de: "Orig: ",
+      vi: "Gốc: ",
+      hi: "मूल: ",
+      ar: "الأصل: ",
+      pt: "Orig: ",
+      it: "Orig: ",
+      ru: "Ориг: "
+    },
+    optPrefix: {
+      ko: "압축본: ",
+      en: "Opt: ",
+      ja: "最適化: ",
+      zh: "优化: ",
+      es: "Optimizado: ",
+      fr: "Optimisé : ",
+      de: "Opt: ",
+      vi: "Nén: ",
+      hi: "अनुकूलित: ",
+      ar: "المحسن: ",
+      pt: "Optimizado: ",
+      it: "Ottimizzato: ",
+      ru: "Оптим: "
+    },
+    originalLabelText: {
+      ko: "원본",
+      en: "Original",
+      ja: "オリジナル",
+      zh: "原始",
+      es: "Original",
+      fr: "Original",
+      de: "Original",
+      vi: "Hình ảnh gốc",
+      hi: "मूल छवि",
+      ar: "الصورة الأصلية",
+      pt: "Original",
+      it: "Originale",
+      ru: "Оригинал"
+    },
+    optLabelText: {
+      ko: "압축본",
+      en: "Optimized",
+      ja: "最適化",
+      zh: "优化本",
+      es: "Optimizado",
+      fr: "Optimisé",
+      de: "Optimiert",
+      vi: "Đã tối ưu",
+      hi: "अनुकूलित",
+      ar: "المحسنة",
+      pt: "Optimizado",
+      it: "Ottimizzato",
+      ru: "Сжатый"
+    },
+    waitingText: {
+      ko: "대기 중...",
+      en: "Processing...",
+      ja: "処理中...",
+      zh: "正在加载...",
+      es: "Procesando...",
+      fr: "En cours...",
+      de: "Verarbeitung...",
+      vi: "Đang thiết lập...",
+      hi: "प्रसंस्करण...",
+      ar: "جاري المعالجة...",
+      pt: "Processando...",
+      it: "In elaborazione...",
+      ru: "Обработка..."
+    },
+    downloadOpt: {
+      ko: "개별 완성파일 즉시저장",
+      en: "Download Optimized File",
+      ja: "最適化ファイルを保存",
+      zh: "下载当前 optimization 图像",
+      es: "Descargar foto optimizada",
+      fr: "Télécharger le visuel optimisé",
+      de: "Optimiertes Bild herunterladen",
+      vi: "Tải xuống hình ảnh đã nén",
+      hi: "अनुकूलित फ़ाइल सहेजें",
+      ar: "تحميل الملف المحسن فورا",
+      pt: "Baixar arquivo otimizado",
+      it: "Scarica il file ottimizzato",
+      ru: "Скачать оптимизированный файл"
+    },
+    imageListPrefix: {
+      ko: "이미지 목록",
+      en: "Loaded Images",
+      ja: "画像リスト",
+      zh: "图像列表",
+      es: "Lista de fotos",
+      fr: "Liste des images",
+      de: "Bilderliste",
+      vi: "Danh sách hình ảnh",
+      hi: "छवियों की सूची",
+      ar: "قائمة الصور المحملة",
+      pt: "Lista de imagens",
+      it: "Lista immagini",
+      ru: "Список файлов"
+    },
+    noActiveImagesToOptimize: {
+      ko: "우측 혹은 상단 영역에 이미지를 넣어주세요",
+      en: "No active images to optimize",
+      ja: "右側または上部のエリアに画像をドロップしてください",
+      zh: "将目标图片放入拖拽区域",
+      es: "Cargue imágenes en el área superior para optimizar",
+      fr: "Veuillez importer des images ci-dessus pour lancer le traitement",
+      de: "Ziehen Sie Bilder in die Arbeitsfläche oben",
+      vi: "Vui lòng tải thả hình ảnh để bắt đầu tối ưu hóa",
+      hi: "अनुकूलित करने के लिए ऊपर चित्र डालें",
+      ar: "يرجى سحب وإفلات الصور هنا للبدء",
+      pt: "Carregue imagens na área de trabalho para otimizar",
+      it: "Trascina qui le immagini per ottimizzarle",
+      ru: "Пожалуйста, перетащите изображения в пустую область"
+    },
+    excludedText: {
+      ko: "제외됨", en: "EXCLUDED", ja: "除外", zh: "已排除", es: "EXCLUIDO", fr: "EXCLU", de: "AUSGESCHLOSSEN", vi: "LOẠI TRỪ", hi: "अपवर्जित", ar: "مستبعد", pt: "EXCLUÍDO", it: "ESCLUSO", ru: "ИСКЛЮЧЕНО"
+    },
+    clickInstant: {
+      ko: "클릭 즉시 반영", en: "Instant", ja: "即時反映", zh: "即时应用", es: "Instantáneo", fr: "Instantané", de: "Sofort", vi: "Tức thì", hi: "तत्काल", ar: "لحظي", pt: "Instantâneo", it: "Istantaneo", ru: "Мгновенно"
+    },
+    collapseText: {
+      ko: "접기", en: "Collapse", ja: "折りたたむ", zh: "收起", es: "Contraer", fr: "Réduire", de: "Einklappen", vi: "Thu gọn", hi: "सिकुड़ें", ar: "طي", pt: "Recolher", it: "Riduci", ru: "Свернуть"
+    },
+    detailsText: {
+      ko: "펴기", en: "Details", ja: "詳細設定", zh: "展开", es: "Expandir", fr: "Détails", de: "Details", vi: "Chi tiết", hi: "विवरण", ar: "تفاصيل", pt: "Detalhes", it: "Dettagli", ru: "Детали"
+    },
+    qualityScaleText: {
+      ko: "품질 수치 입력 (Quality %)", en: "Manual Quality Scale", ja: "品質パーセント指定", zh: "设定输出品质 (%)", es: "Calidad manual (%)", fr: "Chiffre de qualité (%)", de: "Qualitätsstufe (%)", vi: "Chất lượng (%)", hi: "गुणवत्ता मान (%)", ar: "مستوى الجودة (%)", pt: "Qualidade manual (%)", it: "Qualità manuale (%)", ru: "Параметр качества (%)"
+    },
+    lowQualityText: {
+      ko: "최저 용량", en: "Low quality", ja: "最低画質", zh: "低画质", es: "Baja calidad", fr: "Basse qualité", de: "Geringe Qualität", vi: "Dung lượng thấp", hi: "न्यूनतम आकार", ar: "جودة خفيفة", pt: "Baixa qualidade", it: "Bassa qualità", ru: "Меньший размер"
+    },
+    recommendedText: {
+      ko: "기본 추천★", en: "Recommended ★", ja: "推奨設定★", zh: "默认推荐★", es: "Recomendado ★", fr: "Recommandé ★", de: "Empfohlen ★", vi: "Khuyên dùng ★", hi: "अनुशंसित ★", ar: "الموصى به ★", pt: "Recomendado ★", it: "Raccomandato ★", ru: "Рекомендуется ★"
+    },
+    highQualityText: {
+      ko: "무손실 지향", en: "High quality", ja: "高画質", zh: "高清无损", es: "Alta calidad", fr: "Haute qualité", de: "Hohe Qualität", vi: "Chất lượng gốc", hi: "उच्च गुणवत्ता", ar: "عالية الجودة", pt: "Alta qualidade", it: "Alta qualità", ru: "Макс. качество"
+    },
+    originalWidthText: {
+      ko: "비활성화", en: "Original width", ja: "元のサイズ", zh: "原始尺寸", es: "Ancho original", fr: "Largeur originale", de: "Originalgröße", vi: "Tỷ lệ gốc", hi: "मूल चौड़ाई", ar: "الأبعاد الأصلية", pt: "Largura original", it: "Larghezza originale", ru: "Исходная ширина"
+    },
+    setWidthText: {
+      ko: "너비 기준 (Width px)", en: "Set fixed Width", ja: "幅を指定 (Width px)", zh: "指定固定宽度", es: "Ancho fijo (px)", fr: "Largeur fixe (px)", de: "Breite festlegen (px)", vi: "Độ rộng (px)", hi: "चौड़ाई विशिष्ट करें", ar: "عرض ثابت (بكسل)", pt: "Largura fixa (px)", it: "Larghezza fissa (px)", ru: "Задать ширину (px)"
+    },
+    percentScaleText: {
+      ko: "비율 축소 (%)", en: "Percentage Scale", ja: "比率で縮小 (%)", zh: "等比例缩放 (%)", es: "Escala porcentual (%)", fr: "Ratio en (%)", de: "Skalierung (%)", vi: "Tỷ lệ phần trăm (%)", hi: "प्रतिशत संकुचन", ar: "نسبة مئوية (%)", pt: "Escalar por percentagem (%)", it: "Percentuale (%)", ru: "Процентное сжатие (%)"
+    },
+    forceOutputFormatText: {
+      ko: "출력 파일 포맷 변환", en: "Force output format", ja: "出力形式の変換", zh: "目标输出格式", es: "Formato de salida", fr: "Format de sortie", de: "Ausgabeformat", vi: "Định dạng đầu ra", hi: "आउटपुट प्रारूप बदलें", ar: "نوع صيغة المستند", pt: "Formato de saída", it: "Formato output", ru: "Преобразовать формат"
+    },
+    cropBoundariesText: {
+      ko: "스마트 종횡비 자르기 (Crop Aspect Ratio)", en: "Crop boundaries", ja: "アスペクト比クロップ", zh: "裁切画面比例", es: "Relación de aspecto", fr: "Ratio d'aspect rogné", de: "Schnittverhältnis", vi: "Cắt tỷ lệ khung hình", hi: "आस्पेक्ट रेशियो काटें", ar: "خيارات القص", pt: "Proporção de tela", it: "Rapporto di ritaglio", ru: "Умная обрезка сторон"
+    }
+  };
+
+  const getImgText = (key: string): string => {
+    return imgLocalDict[key]?.[lang] || imgLocalDict[key]?.[ 'en' ] || '';
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full" id="image-compressor-root">
@@ -476,18 +657,18 @@ export default function ImageCompressorView({
               <div className="flex items-center gap-2.5 leading-none">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse shrink-0" />
                 <h4 className="text-sm font-extrabold text-gray-900 dark:text-zinc-100 truncate pr-2">
-                  {lang === 'ko' ? "실시간 스플릿 스쿼시 슬라이더 대조기" : "Hifi-Split Compare Stage"}
+                  {getImgText('splitCompareStage') || "Hifi-Split Compare Stage"}
                 </h4>
               </div>
 
               {activeFile?.processedSize && (
                 <div className="flex items-center gap-2 font-mono text-[11px] font-bold text-gray-400">
                   <span className="text-gray-400 bg-gray-50 dark:bg-zinc-950 px-2 py-1 rounded">
-                    {lang === 'ko' ? "원본: " : "Orig: "}{formatSize(activeFile.size)}
+                    {getImgText('origPrefix') || "Orig: "}{formatSize(activeFile.size)}
                   </span>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
                   <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded">
-                    {lang === 'ko' ? "압축본: " : "Opt: "}{formatSize(activeFile.processedSize)}
+                    {getImgText('optPrefix') || "Opt: "}{formatSize(activeFile.processedSize)}
                   </span>
                   <span className="text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-md">
                     -{Math.round(((activeFile.size - activeFile.processedSize) / activeFile.size) * 100)}%
@@ -511,11 +692,11 @@ export default function ImageCompressorView({
                 <SquooshSlider
                   originalUrl={currentOriginalUrl}
                   processedUrl={currentProcessedUrl || currentOriginalUrl}
-                  originalLabel={lang === 'ko' ? `원본 (${formatSize(activeFile?.size || 0)})` : `Original (${formatSize(activeFile?.size || 0)})`}
+                  originalLabel={`${getImgText('originalLabelText') || 'Original'} (${formatSize(activeFile?.size || 0)})`}
                   processedLabel={
                     activeFile?.status === 'completed'
-                      ? (lang === 'ko' ? `압축본 (${formatSize(activeFile?.processedSize || 0)})` : `Optimized (${formatSize(activeFile?.processedSize || 0)})`)
-                      : (lang === 'ko' ? '대기 중...' : 'Processing...')
+                      ? `${getImgText('optLabelText') || 'Optimized'} (${formatSize(activeFile?.processedSize || 0)})`
+                      : (getImgText('waitingText') || 'Processing...')
                   }
                   t={t}
                 />
@@ -545,7 +726,7 @@ export default function ImageCompressorView({
                   id="active-file-download-button"
                 >
                   <Download className="w-4 h-4" />
-                  <span>{lang === 'ko' ? "개별 완성파일 즉시저장" : "Download Optimized File"}</span>
+                  <span>{getImgText('downloadOpt') || "Download Optimized File"}</span>
                 </a>
               </div>
             )}
@@ -561,7 +742,7 @@ export default function ImageCompressorView({
           <div className="flex items-center justify-between border-b border-gray-50 dark:border-zinc-800 pb-3">
             <h3 className="font-extrabold text-[13px] text-gray-800 dark:text-zinc-200 flex items-center gap-1.5 leading-none">
               <FileImage className="w-4.5 h-4.5 text-blue-500" />
-              <span>{lang === 'ko' ? `이미지 목록 (${files.length})` : `Loaded Images (${files.length})`}</span>
+              <span>{(getImgText('imageListPrefix') || 'Loaded Images')} ({files.length})</span>
             </h3>
             {files.length > 0 && (
               <button
@@ -576,7 +757,7 @@ export default function ImageCompressorView({
 
           {files.length === 0 ? (
             <div className="py-7 text-center text-[11px] text-gray-400 font-medium">
-              {lang === 'ko' ? "우측 혹은 상단 영역에 이미지를 넣어주세요" : "No active images to optimize"}
+              {getImgText('noActiveImagesToOptimize') || "No active images to optimize"}
             </div>
           ) : (
             <div className="space-y-2 overflow-y-auto max-h-[190px]" id="image-files-list">
@@ -639,7 +820,7 @@ export default function ImageCompressorView({
                           )}
                           {f.status === 'failed' && (
                             <span className="bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 font-mono text-[8px] px-1.5 py-0.5 rounded font-bold uppercase leading-none shrink-0">
-                              {lang === 'ko' ? "제외됨" : "EXCLUDED"}
+                              {getImgText('excludedText') || "EXCLUDED"}
                             </span>
                           )}
                         </div>
@@ -676,10 +857,10 @@ export default function ImageCompressorView({
 
           <div className="grid grid-cols-2 gap-1.5">
             {[
-              { id: 'instagram', label: getSnsLabel('instagram'), icon: '📸', desc: lang === 'ko' ? '1080px (1:1) · WebP (고압축)' : '1080px (1:1) · WebP', settings: { quality: 0.82, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1080, cropAspectRatio: '1:1' as const, compressEnabled: true } },
-              { id: 'thumbnail', label: getSnsLabel('thumbnail'), icon: '🖼', desc: lang === 'ko' ? '1000px (1:1) · WebP (정사각형)' : '1000px (1:1) · WebP', settings: { quality: 0.80, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1000, cropAspectRatio: '1:1' as const, compressEnabled: true } },
-              { id: 'email', label: getSnsLabel('email'), icon: '✉', desc: lang === 'ko' ? '800px · JPEG (최저용량)' : '800px · JPEG (Light)', settings: { quality: 0.65, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 800, cropAspectRatio: 'none' as const, compressEnabled: true } },
-              { id: 'facebook', label: getSnsLabel('facebook'), icon: '👍', desc: lang === 'ko' ? '1200px · JPEG (고화질표준)' : '1200px · JPEG (Stable)', settings: { quality: 0.80, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 1200, cropAspectRatio: 'none' as const, compressEnabled: true } },
+              { id: 'instagram', label: getSnsLabel('instagram'), icon: '📸', desc: { ko: '1080px (1:1) · WebP (고압축)', ja: '1080px (1:1) · WebP (高圧縮)', zh: '1080px (1:1) · WebP (高压缩)', es: '1080px (1:1) · WebP (Compacto)', fr: '1080px (1:1) · WebP (Compressé)', de: '1080px (1:1) · WebP (Kompakt)' }[lang] || '1080px (1:1) · WebP', settings: { quality: 0.82, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1080, cropAspectRatio: '1:1' as const, compressEnabled: true } },
+              { id: 'thumbnail', label: getSnsLabel('thumbnail'), icon: '🖼', desc: { ko: '1000px (1:1) · WebP (정사각형)', ja: '1000px (1:1) · WebP (正方形)', zh: '1000px (1:1) · WebP (正方形)', es: '1000px (1:1) · WebP (Cuadrado)', fr: '1000px (1:1) · WebP (Carré)', de: '1000px (1:1) · WebP (Quadrat)' }[lang] || '1000px (1:1) · WebP', settings: { quality: 0.80, format: 'webp' as const, resizeMode: 'width' as const, resizeValue: 1000, cropAspectRatio: '1:1' as const, compressEnabled: true } },
+              { id: 'email', label: getSnsLabel('email'), icon: '✉', desc: { ko: '800px · JPEG (최저용량)', ja: '800px · JPEG (低容量)', zh: '800px · JPEG (低容量)', es: '800px · JPEG (Ligero)', fr: '800px · JPEG (Léger)', de: '800px · JPEG (Leicht)' }[lang] || '800px · JPEG (Light)', settings: { quality: 0.65, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 800, cropAspectRatio: 'none' as const, compressEnabled: true } },
+              { id: 'facebook', label: getSnsLabel('facebook'), icon: '👍', desc: { ko: '1200px · JPEG (고화질표준)', ja: '1200px · JPEG (標準高画質)', zh: '1200px · JPEG (标准高清)', es: '1200px · JPEG (Estable)', fr: '1200px · JPEG (Standard)', de: '1200px · JPEG (Stabil)' }[lang] || '1200px · JPEG (Stable)', settings: { quality: 0.80, format: 'jpeg' as const, resizeMode: 'width' as const, resizeValue: 1200, cropAspectRatio: 'none' as const, compressEnabled: true } },
             ].map((preset) => {
               const isSelected = activePreset === preset.id;
               return (
@@ -719,7 +900,7 @@ export default function ImageCompressorView({
               <span>{tOneClickHeader}</span>
             </h4>
             <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
-              {lang === 'ko' ? "클릭 즉시 반영" : "Instant"}
+              {getImgText('clickInstant') || "Instant"}
             </span>
           </div>
 
@@ -769,7 +950,7 @@ export default function ImageCompressorView({
             </span>
             <div className="flex items-center gap-1.5">
               <span className="text-[10.5px] font-bold text-gray-400 bg-gray-100 dark:bg-zinc-850 px-2 py-0.5 rounded">
-                {isAdvancedOpen ? (lang === 'ko' ? "접기" : "Collapse") : (lang === 'ko' ? "펴기" : "Details")}
+                {isAdvancedOpen ? (getImgText('collapseText') || "Collapse") : (getImgText('detailsText') || "Details")}
               </span>
               {isAdvancedOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
@@ -789,7 +970,7 @@ export default function ImageCompressorView({
                   <div className="space-y-3 text-left">
                     <div className="flex items-center justify-between text-[11px] font-bold">
                       <span className="text-gray-700 dark:text-zinc-200 font-extrabold">
-                        {lang === 'ko' ? "품질 수치 입력 (Quality %)" : "Manual Quality Scale"}
+                        {getImgText('qualityScaleText') || "Manual Quality Scale"}
                       </span>
                       <span className={`font-mono text-[10.5px] font-extrabold px-1.5 py-0.5 rounded ${
                         options.quality < 0.45 
@@ -813,9 +994,9 @@ export default function ImageCompressorView({
                       className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-850 accent-indigo-600"
                     />
                     <div className="flex items-center justify-between text-[8px] font-bold font-mono text-gray-400">
-                      <span>{lang === 'ko' ? "최저 용량" : "Low quality"}</span>
-                      <span>{lang === 'ko' ? "기본 추천★" : "Recommended ★"}</span>
-                      <span>{lang === 'ko' ? "무손실 지향" : "High quality"}</span>
+                      <span>{getImgText('lowQualityText') || "Low quality"}</span>
+                      <span>{getImgText('recommendedText') || "Recommended ★"}</span>
+                      <span>{getImgText('highQualityText') || "High quality"}</span>
                     </div>
                   </div>
                 )}
@@ -828,9 +1009,9 @@ export default function ImageCompressorView({
 
                   <div className="grid grid-cols-2 gap-1.5">
                     {[
-                      { id: 'none', label: lang === 'ko' ? '비활성화' : 'Original width' },
-                      { id: 'width', label: lang === 'ko' ? '너비 기준 (Width px)' : 'Set fixed Width' },
-                      { id: 'percent', label: lang === 'ko' ? '비율 축소 (%)' : 'Percentage Scale' }
+                      { id: 'none', label: getImgText('originalWidthText') || 'Original width' },
+                      { id: 'width', label: getImgText('setWidthText') || 'Set fixed Width' },
+                      { id: 'percent', label: getImgText('percentScaleText') || 'Percentage Scale' }
                     ].map((modeItem) => {
                       const isActive = options.resizeMode === modeItem.id;
                       return (
@@ -885,13 +1066,13 @@ export default function ImageCompressorView({
                 {/* 3. Output Format selector */}
                 <div className="space-y-3.5 border-t border-gray-100/60 dark:border-zinc-800/60 pt-4 text-left">
                   <span className="text-xs font-extrabold text-gray-800 dark:text-zinc-200 block">
-                    {lang === 'ko' ? "출력 파일 포맷 변환" : "Force output format"}
+                    {getImgText('forceOutputFormatText') || "Force output format"}
                   </span>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { id: 'webp', title: 'WebP', desc: lang === 'ko' ? '차세대 고대용량 웹 포맷' : 'Modern Web' },
-                      { id: 'png', title: 'PNG', desc: lang === 'ko' ? '무손실 알파 보존' : 'Lossless' },
-                      { id: 'jpeg', title: 'JPEG', desc: lang === 'ko' ? '초강력 호환 레거시' : 'High compatibility' }
+                      { id: 'webp', title: 'WebP', desc: { ko: '차세대 고대용량 웹 포맷', ja: '次世代Web形式', zh: '新型网络图像格式', es: 'Formato web moderno', fr: 'Format web moderne', de: 'Modernes Webformat' }[lang] || 'Modern Web' },
+                      { id: 'png', title: 'PNG', desc: { ko: '무손실 알파 보존', ja: '可逆圧縮・透過対応', zh: '无损透明通道', es: 'Compresión sin pérdidas', fr: 'Sans perte et canal alpha', de: 'Verlustfreie Kompression' }[lang] || 'Lossless' },
+                      { id: 'jpeg', title: 'JPEG', desc: { ko: '초강력 호환 레거시', ja: '互換性重視の標準形式', zh: '经典通用格式', es: 'Alta compatibilidad', fr: 'Haute compatibilité', de: 'Maximale Kompatibilität' }[lang] || 'High compatibility' }
                     ].map((fmtItem) => {
                       const isSelected = options.format === fmtItem.id;
                       return (
@@ -918,7 +1099,7 @@ export default function ImageCompressorView({
                 {/* 4. Crop aspect ratio */}
                 <div className="space-y-3 pt-4 border-t border-gray-100/60 dark:border-zinc-800/60 text-left">
                   <span className="text-xs font-extrabold text-gray-800 dark:text-zinc-200 block">
-                    {lang === 'ko' ? "스마트 종횡비 자르기 (Crop Aspect Ratio)" : "Crop boundaries"}
+                    {getImgText('cropBoundariesText') || "Crop boundaries"}
                   </span>
                   <div className="grid grid-cols-2 gap-1.5">
                     {[
