@@ -338,9 +338,19 @@ export default function App() {
                 viewBox="0 0 100 100"
                 className="w-full h-full"
               >
-                <path d="M50 5 L90 20 L90 50 C90 72 70 90 50 97 C30 90 10 72 10 50 L10 20 Z" fill="#7C3AED"/>
-                <path d="M50 12 L83 25 L83 50 C83 68 66 84 50 90 C34 84 17 68 17 50 L17 25 Z" fill="#9F67FF" opacity="0.3"/>
-                <polygon points="58,18 38,52 52,52 42,82 68,44 53,44" fill="white" opacity="0.95"/>
+                <defs>
+                  <linearGradient id="header-shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="105%" stopColor="#5b21b6" />
+                  </linearGradient>
+                  <linearGradient id="header-lightning-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fef08a" />
+                    <stop offset="100%" stopColor="#eab308" />
+                  </linearGradient>
+                </defs>
+                <path d="M 50 8 C 72 8 88 18 88 18 C 88 48 76 78 50 93 C 24 78 12 48 12 18 C 12 18 28 8 50 8 Z" fill="url(#header-shield-grad)" stroke="#ffffff" strokeWidth="2" />
+                <path d="M 50 14 C 68 14 81.5 22.5 81.5 22.5 C 81.5 47.5 71.5 72.5 50 85 C 28.5 72.5 18.5 47.5 18.5 22.5 C 18.5 22.5 32 14 50 14 Z" fill="none" stroke="#c084fc" strokeWidth="1.5" strokeOpacity="0.4" />
+                <path d="M 54 22 L 32 52 H 49 L 44 78 L 70 46 H 51 L 54 22 Z" fill="url(#header-lightning-grad)" />
               </svg>
             </div>
             <div className="flex flex-col">

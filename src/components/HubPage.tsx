@@ -423,12 +423,19 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
           <button onClick={() => navigate('/')} className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-full h-full">
-                <defs><linearGradient id="hub-g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4f46e5"/><stop offset="100%" stopColor="#06b6d4"/></linearGradient></defs>
-                <rect width="100" height="100" rx="24" fill="url(#hub-g)"/>
-                <g opacity={0.3}><rect x="25" y="35" width="50" height="45" rx="4" fill="#fff"/><rect x="30" y="25" width="40" height="55" rx="4" fill="#fff"/></g>
-                <rect x="35" y="45" width="30" height="35" rx="6" fill="#fff"/>
-                <circle cx="50" cy="58" r="4" fill="#06b6d4"/>
-                <path d="M42 72l5-5 4 4 7-7 7 7H42z" fill="#4f46e5"/>
+                <defs>
+                  <linearGradient id="hub-shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="105%" stopColor="#5b21b6" />
+                  </linearGradient>
+                  <linearGradient id="hub-lightning-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fef08a" />
+                    <stop offset="100%" stopColor="#eab308" />
+                  </linearGradient>
+                </defs>
+                <path d="M 50 8 C 72 8 88 18 88 18 C 88 48 76 78 50 93 C 24 78 12 48 12 18 C 12 18 28 8 50 8 Z" fill="url(#hub-shield-grad)" stroke="#ffffff" strokeWidth="2" />
+                <path d="M 50 14 C 68 14 81.5 22.5 81.5 22.5 C 81.5 47.5 71.5 72.5 50 85 C 28.5 72.5 18.5 47.5 18.5 22.5 C 18.5 22.5 32 14 50 14 Z" fill="none" stroke="#c084fc" strokeWidth="1.5" strokeOpacity="0.4" />
+                <path d="M 54 22 L 32 52 H 49 L 44 78 L 70 46 H 51 L 54 22 Z" fill="url(#hub-lightning-grad)" />
               </svg>
             </div>
             <span className="text-base font-extrabold tracking-tight text-gray-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">BigGrids</span>
