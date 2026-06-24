@@ -59,6 +59,7 @@ import confetti from 'canvas-confetti';
 import JSZip from 'jszip';
 import { PDFDocument } from 'pdf-lib';
 import { BENTO_TOOLS_TRANSLATIONS } from './DocumentConverterTranslations';
+import LocalizedSnsShare from './LocalizedSnsShare';
 
 interface DocumentConverterViewProps {
   files: ProcessableFile[];
@@ -3121,6 +3122,8 @@ export default function DocumentConverterView({
                       <span>{t.shareSns || "SNS Share"}</span>
                     </button>
                   </div>
+
+                  <LocalizedSnsShare lang={language || (isKo ? 'ko' : 'en')} fileType="document" fileName={result.name} fileUrl={result.url} />
                 </div>
               ))}
             </div>
@@ -3568,6 +3571,9 @@ export default function DocumentConverterView({
                         </button>
                       </div>
                     </div>
+
+                    {/* Rich Localized Share Widget for Signature Document */}
+                    <LocalizedSnsShare lang={language || (isKo ? 'ko' : 'en')} fileType="document" fileName={processedResults[0].name} fileUrl={processedResults[0].url} />
                   </div>
                 )}
               </div>

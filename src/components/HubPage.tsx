@@ -1042,28 +1042,6 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
         </div>
       </section>
 
-      {/* Newsletter Subscription */}
-      <section className="py-14 px-4 bg-gray-50 dark:bg-zinc-900">
-        <div className="max-w-xl mx-auto text-center">
-          <div className="text-2xl mb-2">📬</div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-2">{newsletterTitle}</h2>
-          <p className="text-gray-500 dark:text-zinc-400 text-sm mb-6">{newsletterDesc}</p>
-          <div className="flex gap-2 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder={newsletterPlaceholder}
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <button
-              onClick={() => alert(getTranslation('newsletter_alert'))}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-5 py-3 rounded-xl text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
-            >
-              {newsletterBtn}
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="border-t border-gray-100 dark:border-zinc-800 py-10 px-4 text-center text-xs text-gray-400 dark:text-zinc-500">
         <div className="flex items-center justify-center gap-5 mb-3 font-semibold">
