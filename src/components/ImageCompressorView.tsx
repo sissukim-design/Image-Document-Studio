@@ -436,6 +436,66 @@ export default function ImageCompressorView({
   }[lang] || "⚡ Load Cute Sample Graphic";
 
   const imgLocalDict: Record<string, Record<string, string>> = {
+    targetFormatSelectorTitle: {
+      ko: "변환할 확장자 선택",
+      en: "Target Output Format",
+      ja: "変換形式を選択",
+      zh: "选择目标格式",
+      es: "Formato de salida",
+      fr: "Format de sortie",
+      de: "Ausgabeformat",
+      vi: "Định dạng đầu ra",
+      hi: "आउटपुट प्रारूप बदलें",
+      ar: "نوع صيغة المستند",
+      pt: "Formato de saída",
+      it: "Formato output",
+      ru: "Преобразовать формат"
+    },
+    compressionQualityTitle: {
+      ko: "압축 품질",
+      en: "Compression Quality",
+      ja: "圧縮品質",
+      zh: "压缩质量",
+      es: "Calidad de compresión",
+      fr: "Qualité de compression",
+      de: "Kompressionsqualität",
+      vi: "Chất lượng nén",
+      hi: "कंप्रेशन गुणवत्ता",
+      ar: "جودة الضغط",
+      pt: "Qualidade de compressão",
+      it: "Qualità di compressione",
+      ru: "Качество сжатия"
+    },
+    readyToConvertPrefix: {
+      ko: "으로 변환 준비 완료",
+      en: "Ready to convert to ",
+      ja: "に変換する準備ができました",
+      zh: "准备好转换到 ",
+      es: "Listo para convertir a ",
+      fr: "Prêt à convertir en ",
+      de: "Bereit zum Konvertieren in ",
+      vi: "Sẵn sàng chuyển đổi sang ",
+      hi: "में बदलने के लिए तैयार ",
+      ar: "جاهز للتحويل إلى ",
+      pt: "Pronto para converter para ",
+      it: "Pronto per convertire in ",
+      ru: "Готово к конвертации в "
+    },
+    liveUpdatesApply: {
+      ko: "설정 변경 시 자동 실시간 변환",
+      en: "Live updates apply instantly",
+      ja: "設定変更時にリアルタイムで自動変換",
+      zh: "设置更改时自动实时转换",
+      es: "Los cambios se aplican en tiempo real",
+      fr: "Modifications appliquées instantanément",
+      de: "Änderungen werden sofort übernommen",
+      vi: "Cập nhật trực tiếp áp dụng tức thì",
+      hi: "परिवर्तन तुरंत लागू होते हैं",
+      ar: "تطبق التحديثات مباشرة",
+      pt: "As alterações são aplicadas em tempo real",
+      it: "Le modifiche si applicano istantaneamente",
+      ru: "Изменения применяются мгновенно"
+    },
     splitCompareStage: {
       ko: "실시간 스플릿 스쿼시 슬라이더 대조기",
       en: "Hifi-Split Compare Stage",
@@ -628,7 +688,7 @@ export default function ImageCompressorView({
             {/* Left: format selection */}
             <div className="flex flex-col space-y-1.5 shrink-0">
               <span className="text-[11px] font-extrabold text-gray-800 dark:text-zinc-200 uppercase tracking-wider font-mono">
-                {lang === 'ko' ? '변환할 확장자 선택' : 'Target Output Format'}
+                {getImgText('targetFormatSelectorTitle')}
               </span>
               <div className="bg-gray-100/70 dark:bg-zinc-950 p-1 rounded-xl flex items-center gap-1 border border-gray-200/40 dark:border-zinc-800/70 w-fit">
                 {[
@@ -663,7 +723,7 @@ export default function ImageCompressorView({
             <div className="flex flex-col space-y-1.5 flex-1 max-w-sm md:ml-4">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-extrabold text-gray-800 dark:text-zinc-200 uppercase tracking-wider font-mono">
-                  {lang === 'ko' ? '압축 품질' : 'Compression Quality'}
+                  {getImgText('compressionQualityTitle')}
                 </span>
                 <span className={`font-mono text-[10.5px] font-extrabold px-1.5 py-0.5 rounded ${
                   options.quality < 0.45 
@@ -698,15 +758,18 @@ export default function ImageCompressorView({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
               </span>
               <span className="font-medium">
-                {lang === 'ko' 
-                  ? `선택한 [${options.format.toUpperCase() === 'JPEG' ? 'JPG' : options.format.toUpperCase()}]으로 변환 준비 완료` 
-                  : `Ready to convert to [${options.format.toUpperCase() === 'JPEG' ? 'JPG' : options.format.toUpperCase()}]`
-                }
+                {lang === 'ko' ? (
+                  `선택한 [${options.format.toUpperCase() === 'JPEG' ? 'JPG' : options.format.toUpperCase()}]${getImgText('readyToConvertPrefix')}`
+                ) : lang === 'ja' ? (
+                  `[${options.format.toUpperCase() === 'JPEG' ? 'JPG' : options.format.toUpperCase()}]${getImgText('readyToConvertPrefix')}`
+                ) : (
+                  `${getImgText('readyToConvertPrefix')}[${options.format.toUpperCase() === 'JPEG' ? 'JPG' : options.format.toUpperCase()}]`
+                )}
               </span>
             </div>
             {files.length > 0 && (
               <span className="text-gray-400 dark:text-zinc-500 font-mono text-[9.5px]">
-                {lang === 'ko' ? '설정 변경 시 자동 실시간 변환' : 'Live updates apply instantly'}
+                {getImgText('liveUpdatesApply')}
               </span>
             )}
           </div>

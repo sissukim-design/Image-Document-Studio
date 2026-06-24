@@ -357,8 +357,323 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
       hi: '© 2026 BigGrids. सभी दस्तावेज ऑपरेशन्स आपके स्थानीय ब्राउज़र में पूरी तरह सुरक्षित सम्पन्न होते हैं।',
       ar: 'جميع الحقوق محفوظة © 2026 BigGrids. تتم جميع معالجة المستندات والتحويلات بشكل آمن تماماً داخل متصفحك دون اتصال.',
       pt: '© 2026 BigGrids. Todo o processamento de arquivos é realizado localmente no seu navegador.',
-      it: '© 2026 BigGrids. Tutte le funzionalità di lavoro file vengono eseguite localmente nel tuo browser.',
-      ru: '© 2026 BigGrids. Все операции с файлами происходят локально и безопасно в вашем браузере.',
+      it: 'Tutte le funzionalità di lavoro file vengono eseguite localmente nel tuo browser.',
+      ru: 'Все операции с файлами происходят локально и безопасно в вашем браузере.',
+    },
+    heroCta: {
+      ko: '🚀 지금 무료로 시작하기',
+      en: '🚀 Start Free Now',
+      ja: '🚀 今すぐ無料で開始',
+      zh: '🚀 立即免费开始',
+      es: '🚀 Comenzar gratis ahora',
+      fr: '🚀 Commencer gratuitement',
+      de: '🚀 Jetzt kostenlos starten',
+      vi: '🚀 Bắt đầu miễn phí ngay',
+      hi: '🚀 अभी मुफ्त में शुरू करें',
+      ar: '🚀 ابدأ مجاناً الآن',
+      pt: '🚀 Comece gratuitamente agora',
+      it: '🚀 Inizia gratis ora',
+      ru: '🚀 Начать бесплатно',
+    },
+    hero_details_template: {
+      ko: '이미 {count}명이 사용 중 · 설치 불필요 · 완전 무료',
+      en: 'Over {count} users · No install · 100% Free',
+      ja: 'すでに{count}人が利用中 · インストール不要 · 完全無料',
+      zh: '已有 {count} 人正在使用 · 免安装 · 完全免费',
+      es: 'Más de {count} usuarios · Sin instalación · Totalmente gratis',
+      fr: 'Plus de {count} utilisateurs · Sans installation · 100% Gratuit',
+      de: 'Über {count} Nutzer · Keine Installation · Völlig kostenlos',
+      vi: 'Hơn {count} người dùng · Không cài đặt · 100% Miễn phí',
+      hi: '{count} से अधिक उपयोगकर्ता · कोई INSTALACIÓN नहीं · 100% मुफ्त',
+      ar: 'أكثر من {count} مستخدم · لا يتطلب تثبيت · مجاني 100٪',
+      pt: 'Mais de {count} usuários · Sem instalação · 100% Grátis',
+      it: 'Oltre {count} utenti · Nessuna installazione · 100% Gratis',
+      ru: 'Более {count} пользователей · Без установки · 100% Бесплатно',
+    },
+    stats_processed: {
+      ko: '처리된 파일 수',
+      en: 'Files Processed',
+      ja: '処理されたファイル数',
+      zh: '已处理文件数',
+      es: 'Archivos procesados',
+      fr: 'Fichiers traités',
+      de: 'Verarbeitete Dateien',
+      vi: 'Số tệp đã xử lý',
+      hi: 'संसाधित फ़ाइलें',
+      ar: 'الملفات المعالجة',
+      pt: 'Arquivos processados',
+      it: 'File elaborati',
+      ru: 'Обработано файлов',
+    },
+    stats_users: {
+      ko: '누적 사용자',
+      en: 'Cumulative Users',
+      ja: '累計ユーザー数',
+      zh: '累计用户数',
+      es: 'Usuarios acumulados',
+      fr: 'Utilisateurs cumulés',
+      de: 'Kumulierte Nutzer',
+      vi: 'Người dùng tích lũy',
+      hi: 'कुल उपयोगकर्ता',
+      ar: 'المستخدمون التراكميون',
+      pt: 'Usuários acumulados',
+      it: 'Utenti cumulativi',
+      ru: 'Всего пользователей',
+    },
+    stats_users_val: {
+      ko: '98,432명',
+      en: '98,432',
+      ja: '98,432人',
+      zh: '98,432',
+      es: '98,432',
+      fr: '98,432',
+      de: '98,432',
+      vi: '98,432',
+      hi: '98,432',
+      ar: '98,432',
+      pt: '98,432',
+      it: '98,432',
+      ru: '98,432',
+    },
+    stats_formats: {
+      ko: '지원 파일 형식',
+      en: 'Supported Formats',
+      ja: '対応ファイル形式',
+      zh: '支持的文件格式',
+      es: 'Formatos soportados',
+      fr: 'Formats pris en charge',
+      de: 'Unterstützte Formate',
+      vi: 'Định dạng hỗ trợ',
+      hi: 'समर्थित प्रारूप',
+      ar: 'الصيغ المدعومة',
+      pt: 'Formatos suportados',
+      it: 'Formati supportati',
+      ru: 'Поддерживаемые форматы',
+    },
+    cta_badge_template: {
+      ko: '이미 {count}명이 사용 중 🚀',
+      en: '{count} users already using 🚀',
+      ja: 'すでに{count}人が利用中 🚀',
+      zh: '已有 {count} 人正在使用 🚀',
+      es: 'Ya utilizado por {count} personas 🚀',
+      fr: 'Déjà utilisé par {count} utilisateurs 🚀',
+      de: 'Bereits von {count} Personen genutzt 🚀',
+      vi: 'Đã có {count} người sử dụng 🚀',
+      hi: '{count} से अधिक लोग उपयोग कर रहे हैं 🚀',
+      ar: 'يستخدمه بالفعل {count} مستخدم 🚀',
+      pt: 'Já utilizado por {count} pessoas 🚀',
+      it: 'Già utilizzato da {count} persone 🚀',
+      ru: 'Уже используют {count} человек 🚀',
+    },
+    cta_title: {
+      ko: '지금 무료로 시작하세요!',
+      en: 'Start for free today!',
+      ja: '今すぐ無料で始めましょう！',
+      zh: '立即免费体验！',
+      es: '¡Comience gratis hoy mismo!',
+      fr: 'Commencez gratuitement dès aujourd\'hui !',
+      de: 'Starten Sie noch heute kostenlos!',
+      vi: 'Bắt đầu miễn phí ngay hôm nay!',
+      hi: 'आज ही मुफ्त में शुरू करें!',
+      ar: 'ابدأ مجاناً اليوم!',
+      pt: 'Comece hoje mesmo gratuitamente!',
+      it: 'Inizia gratuitamente oggi!',
+      ru: 'Начните бесплатно уже сегодня!',
+    },
+    cta_desc: {
+      ko: '설치 없이, 회원가입 없이, 서버 전송 없이. 브라우저만 있으면 충분합니다.',
+      en: 'No install, no sign-up, no upload. Just your browser is enough.',
+      ja: 'インストール不要、会員登録不要、サーバー送信なし。ブラウザだけで十分です。',
+      zh: '免安装、免注册、不上传。只需浏览器即可轻松使用。',
+      es: 'Sin instalación, sin registro, sin subidas. Su navegador es suficiente.',
+      fr: 'Pas d\'installation, pas d\'inscription, pas d\'envoi. Votre navigateur suffit.',
+      de: 'Keine Installation, keine Registrierung, kein Upload. Ihr Browser reicht aus.',
+      vi: 'Không cài đặt, không đăng ký, không tải lên. Chỉ cần trình duyệt của bạn là đủ.',
+      hi: 'कोई इंस्टॉलेशन नहीं, कोई साइन-अप नहीं, कोई अपलोड नहीं। बस आपका ब्राउज़र काफी है।',
+      ar: 'بدون تثبيت، بدون تسجيل، بدون رفع ملفات. متصفحك كافٍ تماماً.',
+      pt: 'Sem instalação, sem cadastro, sem uploads. Apenas o seu navegador é suficiente.',
+      it: 'Nessuna installazione, nessuna registrazione, nessun caricamento. Basta il tuo browser.',
+      ru: 'Без установки, без регистрации, без отправки на сервер. Достаточно вашего браузера.',
+    },
+    cta_img_btn: {
+      ko: '🖼️ 이미지 압축 시작하기',
+      en: '🖼️ Start Image Compression',
+      ja: '🖼️ 画像圧縮を開始する',
+      zh: '🖼️ 开始图片压缩',
+      es: '🖼️ Comprimir imágenes',
+      fr: '🖼️ Compresser des images',
+      de: '🖼️ Bildkomprimierung starten',
+      vi: '🖼️ Bắt đầu nén hình ảnh',
+      hi: '🖼️ छवि संपीड़न शुरू करें',
+      ar: '🖼️ ابدأ ضغط الصور',
+      pt: '🖼️ Comprimir imagens',
+      it: '🖼️ Comprimi immagini',
+      ru: '🖼️ Сжать изображения',
+    },
+    cta_pdf_btn: {
+      ko: '📄 PDF 변환 시작하기',
+      en: '📄 Start PDF Conversion',
+      ja: '📄 PDF変換を開始する',
+      zh: '📄 开始 PDF 转换',
+      es: '📄 Convertir PDF',
+      fr: '📄 Convertir en PDF',
+      de: '📄 PDF-Konvertierung starten',
+      vi: '📄 Bắt đầu chuyển đổi PDF',
+      hi: '📄 पीडीएफ रूपांतरण शुरू करें',
+      ar: '📄 ابدأ تحويل PDF',
+      pt: '📄 Converter PDF',
+      it: '📄 Converti PDF',
+      ru: '📄 Конвертировать PDF',
+    },
+    share_label: {
+      ko: '이 서비스가 유용하셨나요? 친구에게 공유해보세요!',
+      en: 'Did you find this service useful? Share it with your friends!',
+      ja: 'このサービスは役に立ちましたか？ 友達に共有してみましょう！',
+      zh: '觉得这个工具好用吗？分享给你的朋友吧！',
+      es: '¿Le resultó útil este servicio? ¡Compártalo con sus amigos!',
+      fr: 'Avez-vous trouvé ce service utile ? Partagez-le avec vos amis !',
+      de: 'Fanden Sie diesen Service nützlich? Teilen Sie ihn mit Ihren Freunden!',
+      vi: 'Bạn thấy dịch vụ này hữu ích? Hãy chia sẻ với bạn bè!',
+      hi: 'क्या आपको यह सेवा उपयोगी लगी? अपने दोस्तों के साथ साझा करें!',
+      ar: 'هل وجدت هذه الخدمة مفيدة؟ شاركها مع أصدقائك!',
+      pt: 'Achou este serviço útil? Compartilhe com os seus amigos!',
+      it: 'Hai trovato utile questo servizio? Condividilo con i tuoi amici!',
+      ru: 'Понравился сервис? Поделитесь с друзьями!',
+    },
+    share_twitter: {
+      ko: '𝕏 트위터 공유',
+      en: '𝕏 Share on Twitter',
+      ja: '𝕏 Twitterで共有',
+      zh: '𝕏 分享至 Twitter',
+      es: '𝕏 Compartir en Twitter',
+      fr: '𝕏 Partager sur Twitter',
+      de: '𝕏 Auf Twitter teilen',
+      vi: '𝕏 Chia sẻ lên Twitter',
+      hi: '𝕏 ट्विटर पर साझा करें',
+      ar: '𝕏 مشاركة على تويتر',
+      pt: '𝕏 Compartilhar no Twitter',
+      it: '𝕏 Condividi su Twitter',
+      ru: '𝕏 Поделиться в Twitter',
+    },
+    share_twitter_text: {
+      ko: '서버 없이 브라우저에서 이미지/PDF 작업! 완전 무료 👉 ',
+      en: 'Compress images and edit PDFs directly in your browser without any server upload! 100% Free 👉 ',
+      ja: 'サーバー不要でブラウザ上で画像/PDFの圧縮・转换！ 完全無料 👉 ',
+      zh: '无需服务器，直接在浏览器中进行图片/PDF压缩与转换！完全免费 👉 ',
+      es: '¡Comprima imágenes y edite PDFs en su navegador sin subir al servidor! 100% Gratis 👉 ',
+      fr: 'Compressez des images et éditez des PDFs directement dans votre navigateur sans transfert ! 100% Gratuit 👉 ',
+      de: 'Bilder komprimieren und PDFs direkt im Browser ohne Server-Upload bearbeiten! 100% Kostenlos 👉 ',
+      vi: 'Nén ảnh và chỉnh sửa PDF trực tiếp trên trình duyệt không cần tải lên máy chủ! 100% Miễn phí 👉 ',
+      hi: 'बिना किसी सर्वर अपलोड के सीधे अपने ब्राउज़र में छवियां संपीड़ित करें और पीडीएफ संपादित करें! 100% मुफ्त 👉 ',
+      ar: 'اضغط الصور وحرر ملفات PDF مباشرة في متصفحك دون رفعها إلى أي خادم! مجاني 100٪ 👉 ',
+      pt: 'Comprima imagens e edite PDFs diretamente no seu navegador sem upload! 100% Grátis 👉 ',
+      it: 'Comprimi immagini e modifica PDF direttamente nel browser senza caricare file! 100% Gratis 👉 ',
+      ru: 'Сжатие изображений и редактирование PDF прямо в браузере без отправки на сервер! 100% Бесплатно 👉 ',
+    },
+    link_copied: {
+      ko: '링크가 복사되었습니다! 🔗',
+      en: 'Link copied! 🔗',
+      ja: 'リンクがコピーされました！ 🔗',
+      zh: '链接已复制！ 🔗',
+      es: '¡Enlace copiado! 🔗',
+      fr: 'Lien copié ! 🔗',
+      de: 'Link kopiert! 🔗',
+      vi: 'Đã sao chép liên kết! 🔗',
+      hi: 'लिंक कॉपी हो गया! 🔗',
+      ar: 'تم نسخ الرابط! 🔗',
+      pt: 'Link copiado! 🔗',
+      it: 'Link copiato! 🔗',
+      ru: 'Ссылка скопирована! 🔗',
+    },
+    share_link: {
+      ko: '🔗 링크 복사',
+      en: '🔗 Copy Link',
+      ja: '🔗 リンクをコピー',
+      zh: '🔗 复制链接',
+      es: '🔗 Copiar enlace',
+      fr: '🔗 Copier le lien',
+      de: '🔗 Link kopieren',
+      vi: '🔗 Sao chép liên kết',
+      hi: '🔗 लिंक कॉपी करें',
+      ar: '🔗 نسخ الرابط',
+      pt: '🔗 Copiar link',
+      it: '🔗 Copia link',
+      ru: '🔗 Скопировать ссылку',
+    },
+    newsletter_title: {
+      ko: '최신 기능 알림 받기',
+      en: 'Get feature updates',
+      ja: '最新機能の通知を受け取る',
+      zh: '获取最新功能通知',
+      es: 'Recibir actualizaciones de funciones',
+      fr: 'Recevoir les mises à jour des fonctionnalités',
+      de: 'Funktionsupdates erhalten',
+      vi: 'Nhận thông báo tính năng mới',
+      hi: 'सुविधा अपडेट प्राप्त करें',
+      ar: 'احصل على تحديثات الميزات',
+      pt: 'Receber atualizações de recursos',
+      it: 'Ricevi aggiornamenti sulle funzionalità',
+      ru: 'Получать обновления функций',
+    },
+    newsletter_desc: {
+      ko: '새 기능이 출시되면 가장 먼저 알려드립니다. 스팸 없이, 언제든지 취소 가능합니다.',
+      en: 'Be the first to know when new features are released. No spam, cancel anytime.',
+      ja: '新機能がリリースされたら一番最初にお知らせします。スパムなし、いつでもキャンセル可能。',
+      zh: '新功能上线时，您将第一时间收到通知。无垃圾邮件，可随时退订。',
+      es: 'Sea el primero en saber cuándo se lancan nuevas funciones. Sin spam, cancele en cualquier momento.',
+      fr: 'Soyez le premier informé de la sortie de nouvelles fonctionnalités. Sans spam, désinscription possible à tout moment.',
+      de: 'Erfahren Sie als Erster, wenn neue Funktionen veröffentlicht werden. Kein Spam, jederzeit kündbar.',
+      vi: 'Trở thành người đầu tiên biết khi có tính năng mới. Không quảng cáo rác, hủy đăng ký bất cứ lúc nào.',
+      hi: 'नई सुविधाएं जारी होने पर सबसे पहले जानें। कोई स्पैम नहीं, किसी भी समय रद्द करें।',
+      ar: 'كن أول من يعلم عند إطلاق ميزات جديدة. بدون رسائل مزعجة، ويمكنك الإلغاء في أي وقت.',
+      pt: 'Seja o primeiro a saber quando novos recursos forem lançados. Sem spam, cancele a qualquer momento.',
+      it: 'Sii il primo a sapere quando vengono rilasciate nuove funzionalità. Nessuno spam, annulla in qualsiasi momento.',
+      ru: 'Узнавайте первыми о выходе новых функций. Без спама, отписка в любое время.',
+    },
+    newsletter_placeholder: {
+      ko: '이메일 주소 입력',
+      en: 'Enter email address',
+      ja: 'メールアドレスを入力',
+      zh: '输入电子邮件地址',
+      es: 'Introducir dirección de correo electrónico',
+      fr: 'Saisir l\'adresse e-mail',
+      de: 'E-Mail-Adresse eingeben',
+      vi: 'Nhập địa chỉ email',
+      hi: 'ईमेल पता दर्ज करें',
+      ar: 'أدخل البريد الإلكتروني',
+      pt: 'Digite seu e-mail',
+      it: 'Inserisci l\'indirizzo e-mail',
+      ru: 'Введите адрес эл. почты',
+    },
+    newsletter_alert: {
+      ko: '구독해주셔서 감사합니다! 🎉',
+      en: 'Thank you for subscribing! 🎉',
+      ja: 'ご購読ありがとうございます！ 🎉',
+      zh: '感谢您的订阅！ 🎉',
+      es: '¡Gracias por suscribirse! 🎉',
+      fr: 'Merci pour votre abonnement ! 🎉',
+      de: 'Danke für das Abonnieren! 🎉',
+      vi: 'Cảm ơn bạn đã đăng ký! 🎉',
+      hi: 'सदस्यता लेने के लिए धन्यवाद! 🎉',
+      ar: 'شكراً لاشتراكك معنا! 🎉',
+      pt: 'Obrigado por se inscrever! 🎉',
+      it: 'Grazie per esserti iscritto! 🎉',
+      ru: 'Спасибо за подписку! 🎉',
+    },
+    newsletter_btn: {
+      ko: '구독하기',
+      en: 'Subscribe',
+      ja: '購読する',
+      zh: '订阅',
+      es: 'Suscribirse',
+      fr: 'S\'abonner',
+      de: 'Abonnieren',
+      vi: 'Đăng ký',
+      hi: 'सदस्यता लें',
+      ar: 'اشتراك',
+      pt: 'Inscrever-se',
+      it: 'Iscriviti',
+      ru: 'Подписаться',
     }
   };
 
@@ -372,6 +687,26 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
     return (entry?.[language] as string[]) || (entry?.['en'] as string[]) || [];
   };
 
+  const renderTemplateWithCount = (key: string, countStr: string) => {
+    const text = getTranslation(key);
+    if (!text.includes('{count}')) {
+      return text;
+    }
+    const parts = text.split('{count}');
+    return (
+      <>
+        {parts[0]}
+        <strong className="text-purple-600 dark:text-purple-400">{countStr}</strong>
+        {parts[1]}
+      </>
+    );
+  };
+
+  const renderCtaBadge = () => {
+    const text = getTranslation('cta_badge_template');
+    return text.replace('{count}', '98,432');
+  };
+
   const imageFeatures = getTranslationArray('imageFeatures');
   const docFeatures = getTranslationArray('docFeatures');
   const badge = getTranslation('badge');
@@ -383,6 +718,23 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
   const docCardSub = getTranslation('docCardSub');
   const ctaLabel = getTranslation('ctaLabel');
   const featureTitle = getTranslation('featureTitle');
+
+  const heroCta = getTranslation('heroCta');
+  const statsProcessed = getTranslation('stats_processed');
+  const statsUsers = getTranslation('stats_users');
+  const statsUsersVal = getTranslation('stats_users_val');
+  const statsFormats = getTranslation('stats_formats');
+  const ctaTitle = getTranslation('cta_title');
+  const ctaDesc = getTranslation('cta_desc');
+  const ctaImgBtn = getTranslation('cta_img_btn');
+  const ctaPdfBtn = getTranslation('cta_pdf_btn');
+  const shareLabel = getTranslation('share_label');
+  const shareTwitter = getTranslation('share_twitter');
+  const shareLink = getTranslation('share_link');
+  const newsletterTitle = getTranslation('newsletter_title');
+  const newsletterDesc = getTranslation('newsletter_desc');
+  const newsletterPlaceholder = getTranslation('newsletter_placeholder');
+  const newsletterBtn = getTranslation('newsletter_btn');
 
   const pillars = [
     {
@@ -417,6 +769,8 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 transition-colors duration-200">
+
+
       {/* Navbar */}
       <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -482,6 +836,21 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
           >
             {heroSub}
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="flex flex-col sm:flex-row gap-3 justify-center mt-8 mb-4"
+          >
+            <button
+              onClick={() => navigate('/image')}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 px-8 rounded-xl text-base hover:opacity-90 transition-all shadow-lg hover:shadow-purple-200 dark:hover:shadow-purple-900"
+            >
+              {heroCta}
+            </button>
+          </motion.div>
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{renderTemplateWithCount('hero_details_template', '98,432')}</p>
         </div>
       </section>
 
@@ -603,6 +972,94 @@ export default function HubPage({ language, LanguageSelectorComponent, ThemeTogg
                 <div className="text-xs text-gray-500 dark:text-zinc-500 leading-relaxed">{p.desc}</div>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* Stats Counter Section */}
+      <section className="py-14 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-zinc-900 dark:to-zinc-800">
+        <div className="max-w-4xl mx-auto px-4 grid grid-cols-3 gap-8 text-center">
+          <div className="p-6">
+            <div className="text-4xl font-black text-purple-600 dark:text-purple-400">1,234,567+</div>
+            <div className="text-sm text-gray-600 dark:text-zinc-400 mt-1 font-medium">{statsProcessed}</div>
+          </div>
+          <div className="p-6">
+            <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400">{statsUsersVal}</div>
+            <div className="text-sm text-gray-600 dark:text-zinc-400 mt-1 font-medium">{statsUsers}</div>
+          </div>
+          <div className="p-6">
+            <div className="text-4xl font-black text-violet-600 dark:text-violet-400">50+</div>
+            <div className="text-sm text-gray-600 dark:text-zinc-400 mt-1 font-medium">{statsFormats}</div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA + Social Share Section */}
+      <section className="py-16 px-4 bg-gradient-to-br from-purple-600 via-indigo-600 to-violet-700 text-white text-center">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-sm font-medium bg-white/20 rounded-full px-4 py-1 inline-block mb-4">{renderCtaBadge()}</div>
+          <h2 className="text-3xl font-black mb-4">{ctaTitle}</h2>
+          <p className="text-white/80 mb-8 text-base">{ctaDesc}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
+            <button
+              onClick={() => navigate('/image')}
+              className="bg-white text-purple-700 font-bold py-3.5 px-8 rounded-xl text-base hover:bg-yellow-300 hover:text-purple-900 transition-all shadow-lg"
+            >
+              {ctaImgBtn}
+            </button>
+            <button
+              onClick={() => navigate('/document')}
+              className="bg-white/10 border border-white/30 text-white font-bold py-3.5 px-8 rounded-xl text-base hover:bg-white/20 transition-all"
+            >
+              {ctaPdfBtn}
+            </button>
+          </div>
+          <div>
+            <p className="text-white/60 text-sm mb-3">{shareLabel}</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => {
+                  const url = window.location.href;
+                  const text = getTranslation('share_twitter_text') + url;
+                  window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text), '_blank');
+                }}
+                className="bg-black/30 hover:bg-black/50 border border-white/20 text-white text-sm py-2 px-4 rounded-lg transition-all flex items-center gap-2"
+              >
+                <span>{shareTwitter}</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  alert(getTranslation('link_copied'));
+                }}
+                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm py-2 px-4 rounded-lg transition-all flex items-center gap-2"
+              >
+                <span>{shareLink}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Subscription */}
+      <section className="py-14 px-4 bg-gray-50 dark:bg-zinc-900">
+        <div className="max-w-xl mx-auto text-center">
+          <div className="text-2xl mb-2">📬</div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-2">{newsletterTitle}</h2>
+          <p className="text-gray-500 dark:text-zinc-400 text-sm mb-6">{newsletterDesc}</p>
+          <div className="flex gap-2 max-w-md mx-auto">
+            <input
+              type="email"
+              placeholder={newsletterPlaceholder}
+              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <button
+              onClick={() => alert(getTranslation('newsletter_alert'))}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-5 py-3 rounded-xl text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
+            >
+              {newsletterBtn}
+            </button>
           </div>
         </div>
       </section>
